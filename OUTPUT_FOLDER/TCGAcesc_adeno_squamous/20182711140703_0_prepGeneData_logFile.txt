@@ -1,0 +1,16 @@
+gene2tadDT_file	=	/mnt/ed4/marie/gene_data_final/consensus_DI_covThresh_r0.6_t80000_v0_w-1_final/genes2tad/all_genes_positions.txt
+TADpos_file	=	/mnt/ed4/marie/gene_data_final/consensus_DI_covThresh_r0.6_t80000_v0_w-1_final/genes2tad/all_assigned_regions.txt
+settingF	=	/mnt/ed4/marie/scripts/TAD_DE_pipeline/SETTING_FILES_cleanInput/run_settings_TCGAcesc_adeno_squamous.R
+0_PREPGENEDATA> replace NA with 0 before computing cpm: 0/5584432 (0%)
+0_PREPGENEDATA> Number of genes retained: 20332/20531
+0_PREPGENEDATA> Remove geneID with ambiguous entrezID, final # of rows  : 20332/20332
+0_PREPGENEDATA> NA in cpm_exprDT: 0/5530304 (0%)
+0_PREPGENEDATA> useFilterCountData is TRUE -> CPM-filtered geneList; to keep: 18304/20332
+0_PREPGENEDATA> useTADonly is TRUE -> only TAD regions: 9086/18304 regions
+0_PREPGENEDATA> useTADonly is TRUE -> TAD-filtered geneList; to keep: 9086/18304
+0_PREPGENEDATA> Current threhsold for TAD size: >= 3 and <= 28 (95%)
+0_PREPGENEDATA> useFilterSizeData is TRUE -> size-filtered geneList; to keep: 6782/9086
+0_PREPGENEDATA> pipeline_geneList compared to available genes: 6782/20332
+0_PREPGENEDATA> pipeline_regionList compared to available regions: 764/1354
+2018-11-27 14:07:01
+2018-11-27 14:07:21

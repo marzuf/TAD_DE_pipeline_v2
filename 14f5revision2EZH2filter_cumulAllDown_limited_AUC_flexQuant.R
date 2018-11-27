@@ -67,6 +67,14 @@ stopifnot( TADs_histFC[names(TADs_histFC) %in% TADs_toKeep_histFC] <= histFC_thr
 pipLogFile <- paste0(pipOutFold, "/", format(Sys.time(), "%Y%d%m%H%M%S"),"_", script_name, "_logFile.txt")
 system(paste0("rm -f ", pipLogFile))
 
+# ADDED 27.11.2018 to check using other files
+txt <- paste0("gene2tadDT_file\t=\t", gene2tadDT_file, "\n")
+printAndLog(txt, pipLogFile)
+txt <- paste0("TADpos_file\t=\t", TADpos_file, "\n")
+printAndLog(txt, pipLogFile)
+txt <- paste0("settingF\t=\t", settingF, "\n")
+printAndLog(txt, pipLogFile)
+
 # 14f:   leg_xpos <- ifelse(observed_auc <= max(density_permut$x), observed_auc,  max(density_permut$x))
 # 14f2:  leg_xpos <- observed_auc
 

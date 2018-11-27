@@ -77,6 +77,15 @@ system(paste0("mkdir -p ", curr_outFold))
 pipLogFile <- paste0(pipOutFold, "/", format(Sys.time(), "%Y%d%m%H%M%S"),"_", script_name, "_logFile.txt")
 system(paste0("rm -f ", pipLogFile))
 
+# ADDED 27.11.2018 to check using other files
+txt <- paste0("gene2tadDT_file\t=\t", gene2tadDT_file, "\n")
+printAndLog(txt, pipLogFile)
+txt <- paste0("TADpos_file\t=\t", TADpos_file, "\n")
+printAndLog(txt, pipLogFile)
+txt <- paste0("settingF\t=\t", settingF, "\n")
+printAndLog(txt, pipLogFile)
+
+
 stopifnot(file.exists(paste0(pipOutFold, "/", script0_name, "/rna_rnaseqDT.Rdata")))
 rnaseqDT <- eval(parse(text = load(paste0(pipOutFold, "/", script0_name, "/rna_rnaseqDT.Rdata"))))
 if(ncol(rnaseqDT) >= 5 & nrow(rnaseqDT) >= 5)

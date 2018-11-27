@@ -101,6 +101,15 @@ txt <- paste0(toupper(script_name), "> Signif. TADs for emp. FDR are ranked by d
 printAndLog(txt, pipLogFile)
 
 
+# ADDED 27.11.2018 to check using other files
+txt <- paste0("gene2tadDT_file\t=\t", gene2tadDT_file, "\n")
+printAndLog(txt, pipLogFile)
+txt <- paste0("TADpos_file\t=\t", TADpos_file, "\n")
+printAndLog(txt, pipLogFile)
+txt <- paste0("settingF\t=\t", settingF, "\n")
+printAndLog(txt, pipLogFile)
+
+
 all_empFDR_scores <- sort(meanTAD_logFC_intraCorr, decreasing=T)
 
 ########################################################################################
