@@ -562,7 +562,8 @@ plot_lolliTAD <- function(TAD_to_plot,
                           textLeft = FALSE,
 						  cond1 = "cond1",
 						  cond2 = "cond2",
-						  labelWithRank=FALSE
+						  labelWithRank=FALSE,
+						  mytitle=NULL
                           ) {
 
   suppressPackageStartupMessages(library(foreach, warn.conflicts = FALSE, quietly = TRUE, verbose = FALSE)) 
@@ -655,9 +656,12 @@ as_dictionary <- as_data_pronoun
 
 #cat("AAA\n")
   
+  lolliTitle <- ifelse(is.null(mytitle), TAD_to_plot, mytitle) 
+  
+  
   # use gene entrez ID not symbols here (some genes duplicated name with different entrez ID)
   p <- ggdotchart(TAD_genes_DT, x = "gene", y = "log_FC",
-                  title = TAD_to_plot,
+                  title = lolliTitle,
              color = TAD_genes_DT$logFC_color ,             # color of the dots
              ylab = "Log2(fold change)",
              xlab=my_xlab,

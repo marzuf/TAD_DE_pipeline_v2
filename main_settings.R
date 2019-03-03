@@ -1,3 +1,5 @@
+stop("!!! should never be used !!!\n")
+
 ########################################################
 ### set paths to main files needed accross the workflow + general settings
 ########################################################

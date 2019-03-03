@@ -1,7 +1,6 @@
 #!/usr/bin/Rscript
 
 
-
 cat(paste0("> START ", "1cleanInput",  "\n"))
 
 

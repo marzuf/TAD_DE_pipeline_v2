@@ -5,6 +5,9 @@ startTime <- Sys.time()
 ### I change the way to calculate and store in 170v2 only the data with the shuffTADs ratios
 ### so now in 170_ => save all ratios (as in 170v0), but with the way of computing ratios for shuffTADs as in 170v2)
 
+# step8_for_permutGenes
+# step8_for_randomTADsShuffle
+
 SSHFS <- F
 setDir <- ifelse(SSHFS, "/media/electron", "")
 
@@ -81,9 +84,11 @@ printAndLog(txt, pipLogFile)
     cat(paste0("... load: ", paste0(pipOutFold, "/", script8_name, "/", curr_ratio_type, "_permDT.Rdata"), "\n"))
     permut_currDown <- eval(parse(text = load(paste0(pipOutFold, "/", script8_name, "/", curr_ratio_type, "_permDT.Rdata"))))
     
+    if(step8_for_randomTADsShuffle) {
     cat(paste0("... load: ", paste0(pipOutFold, "/", script8_name, "/", curr_ratio_type, "_randomShuffleList.Rdata"), "\n"))
     shuff_currDown <-  eval(parse(text = load(paste0(pipOutFold, "/", script8_name, "/", curr_ratio_type, "_randomShuffleList.Rdata"))))
-    
+    }
+
     # ensure I used the same set of TADs for the permutation and for the calculation
     # (NB: would also be possible to filter the obs_curr_down, but not the permut_currDown)
     stopifnot(all(names(obs_curr_down) %in% rownames(permut_currDown)))
@@ -100,25 +105,26 @@ printAndLog(txt, pipLogFile)
     rownames(filter_permut_currDown) <- NULL
     stopifnot(length(filter_obs_curr_down) == nrow(filter_permut_currDown_unsort))
     
+    if(step8_for_randomTADsShuffle) {
     cat("... prepare shuff. data\n")
     shuff_currDown <- lapply(shuff_currDown, sort, decreasing=T)
-    
+    }    
     # return(NULL)
     
     if(curr_ratio_type == "ratioDown") {
       curr_filter_obs_curr_down <- abs(filter_obs_curr_down - 0.5) + 0.5
       curr_filter_permut_currDown <- abs(filter_permut_currDown - 0.5) + 0.5
-      curr_shuff_currDown <- lapply(shuff_currDown, function(x) abs(x - 0.5) + 0.5)
+      if(step8_for_randomTADsShuffle) curr_shuff_currDown <- lapply(shuff_currDown, function(x) abs(x - 0.5) + 0.5)
       departFromValue <- 0.5
     } else if(curr_ratio_type == "rescWeightedQQ" | curr_ratio_type == "rescWeighted") {
       curr_filter_obs_curr_down <- abs(filter_obs_curr_down - 0.5) + 0.5
       curr_filter_permut_currDown <- abs(filter_permut_currDown - 0.5) + 0.5
-      curr_shuff_currDown <- lapply(shuff_currDown, function(x) abs(x - 0.5) + 0.5)
+      if(step8_for_randomTADsShuffle) curr_shuff_currDown <- lapply(shuff_currDown, function(x) abs(x - 0.5) + 0.5)
       departFromValue <- 0.5
     } else if(curr_ratio_type == "prodSignedRatio") {
       curr_filter_obs_curr_down <- filter_obs_curr_down
       curr_filter_permut_currDown <- filter_permut_currDown
-      curr_shuff_currDown <- shuff_currDown
+      if(step8_for_randomTADsShuffle) curr_shuff_currDown <- shuff_currDown
       departFromValue <- 0
     } else {
       stop(paste0("curr_ratio_type: ", curr_ratio_type, "\n", "should not happen"))
@@ -136,7 +142,7 @@ printAndLog(txt, pipLogFile)
                                                        toPlot = FALSE,
                                                        departureValue = departFromValue,
                                                        my_stat = curr_ratio_type)
-    
+    if(step8_for_randomTADsShuffle) {
     auc_ratio_stat_dep05_shuffTADs <- calc_aucObsPerm_cumsum_list_v2(observ_vect = curr_filter_obs_curr_down,
                                                                   shuff_List=curr_shuff_currDown,
                                                                   thresh_perm =permThresh,
@@ -148,7 +154,10 @@ printAndLog(txt, pipLogFile)
                                                                         toPlot = FALSE,
                                                                         my_stat = curr_ratio_type,
                                                                         departureValue = departFromValue)
- 
+   } else {
+    auc_ratio_stat_dep05_shuffTADs <- NA
+    auc_ratio_stat_dep05_pval_shuffTADs <- NA
+   }
    c(auc_ratio_stat_dep05, auc_ratio_stat_dep05_pval, auc_ratio_stat_dep05_shuffTADs, auc_ratio_stat_dep05_pval_shuffTADs)
     # c(auc_ratio_stat_dep05_shuffTADs)
   }

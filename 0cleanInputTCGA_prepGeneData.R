@@ -1,8 +1,6 @@
 #!/usr/bin/Rscript
 
-stop("Don't use me ! use 0cleanInputTCGA.R instead\n")
-
-cat(paste0("> START ", "OcleanInput",  "\n"))
+cat(paste0("> START ", "OcleanInputTCGA",  "\n"))
 
 startTime <- Sys.time()
 
@@ -22,7 +20,9 @@ stopifnot(file.exists(paste0(pipScriptDir, "/", script_name, ".R")))
 cat(paste0("> START ", script_name,  "\n"))
 
 # cat(paste0("setDir = ", setDir, "\n"))
+cat("source main_settings \n")
 source("main_settings.R") # setDir is the main_settings not in run_settings
+cat("source settingF \n")
 source(settingF)
 source(paste0(pipScriptDir, "/", "TAD_DE_utils.R"))
 suppressPackageStartupMessages(library(edgeR, warn.conflicts = FALSE, quietly = TRUE, verbose = FALSE))
@@ -350,7 +350,18 @@ stopifnot(all(rna_geneList %in% entrezDT$entrezID))
 
 #("raw", "RSEM", "FPKM", "DESeq2", "microarray")
 
-if(inputDataType == "FPKM" | inputDataType == "RSEM" | inputDataType == "microarray") {
+###**** ADDED HERE FOLLOWING DISCUSSION WITH MARCO RSEM CONDITION  --- 07.12.2018
+if(inputDataType == "RSEM") {
+  cat("... RSEM data: fpkm file provided in setting file\n")  
+  stopifnot(exists("rna_fpkmDT_file"))
+  loaded_rna_fpkmDT <- eval(parse(text = load(rna_fpkmDT_file)))
+  stopifnot(rownames(rna_rnaseqDT) %in% rownames(loaded_rna_fpkmDT))
+  stopifnot(colnames(rna_rnaseqDT) %in% colnames(loaded_rna_fpkmDT))
+  rna_fpkmDT <- loaded_rna_fpkmDT[rownames(rna_rnaseqDT), colnames(rna_rnaseqDT)]
+
+
+
+} else if(inputDataType == "FPKM" | inputDataType == "microarray") {
   cat("... already FPKM/RSEM/microarray data, save provided data under correct file name\n")  
   rna_fpkmDT <- rna_rnaseqDT
 } else if(inputDataType == "raw" | inputDataType == "DESeq2") {
