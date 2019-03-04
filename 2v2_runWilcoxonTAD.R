@@ -7,6 +7,7 @@ startTime <- Sys.time()
 # - script0: rna_geneList.Rdata
 # - script0: pipeline_geneList.Rdata
 # - script0: rna_madnorm_rnaseqDT.Rdata or rna_qqnorm_rnaseqDT.Rdata
+# - script0: fpkm_rnaseqDT
 ################################################################################
 
 ################  OUTPUT
@@ -62,12 +63,12 @@ printAndLog(txt, pipLogFile)
 if(microarray) {
   ### CHANGED HERE FOR THE V2 VERSION !!! 02.03.2019
   # norm_rnaseqDT <- eval(parse(text = load(paste0(pipOutFold, "/", script0_name, "/rna_madnorm_rnaseqDT.Rdata"))))
-  norm_rnaseqDT <- eval(parse(text = load(file.path(pipOutFold, script0_name, "rna_fpkmDT.Rdata"))))
+  fpkm_rnaseqDT <- eval(parse(text = load(file.path(pipOutFold, script0_name, "rna_fpkmDT.Rdata"))))
   
 }else {
   ### CHANGED HERE FOR THE V2 VERSION !!! 02.03.2019
   # norm_rnaseqDT <- eval(parse(text = load(paste0(pipOutFold, "/", script0_name, "/rna_qqnorm_rnaseqDT.Rdata")))) 
-  norm_rnaseqDT <- eval(parse(text = load(file.path(pipOutFold, script0_name, "rna_fpkmDT.Rdata"))))
+  fpkm_rnaseqDT <- eval(parse(text = load(file.path(pipOutFold, script0_name, "rna_fpkmDT.Rdata"))))
   
 }
 initList <- eval(parse(text = load(paste0(pipOutFold, "/", script0_name, "/rna_geneList.Rdata"))))
@@ -76,8 +77,8 @@ geneList <- eval(parse(text = load(paste0(pipOutFold, "/", script0_name, "/pipel
 txt <- paste0(toupper(script_name), "> Start with # genes: ", length(geneList), "/", length(initList), "\n")
 printAndLog(txt, pipLogFile)
 
-norm_rnaseqDT <- norm_rnaseqDT[names(geneList),]    
-stopifnot(all(rownames(norm_rnaseqDT) == names(geneList)))
+fpkm_rnaseqDT <- fpkm_rnaseqDT[names(geneList),]    
+stopifnot(all(rownames(fpkm_rnaseqDT) == names(geneList)))
 stopifnot(!any(duplicated(names(geneList))))
 #*******************************************************************************
 
@@ -96,8 +97,8 @@ gene2tadDT <- gene2tadDT[gene2tadDT$entrezID %in% as.character(geneList),]
 samp1 <- eval(parse(text=load(paste0(setDir, "/", sample1_file))))
 samp2 <- eval(parse(text=load(paste0(setDir, "/", sample2_file))))
 
-stopifnot(all(samp1 %in% colnames(norm_rnaseqDT)))
-stopifnot(all(samp2 %in% colnames(norm_rnaseqDT)))
+stopifnot(all(samp1 %in% colnames(fpkm_rnaseqDT)))
+stopifnot(all(samp2 %in% colnames(fpkm_rnaseqDT)))
 
 # filter for the size (UPDATE: done in 0_prepGeneData)
 regionsFilter <- regionList
@@ -119,10 +120,10 @@ wilcox_pairedTAD_meanExpr_fpkm <- foreach(i_reg = 1:length(regionsFilter)) %dopa
   cat(paste0("... wilcox tests, region ", i_reg, "/", length(regionsFilter), "\n"))
   reg <- regionsFilter[i_reg]
   reg_genes <- gene2tadDT$entrezID[gene2tadDT$region == reg]
-  subData <- as.data.frame(norm_rnaseqDT[which(geneList[rownames(norm_rnaseqDT)] %in% reg_genes),,drop=F])
+  subData <- as.data.frame(fpkm_rnaseqDT[which(geneList[rownames(fpkm_rnaseqDT)] %in% reg_genes),,drop=F])
   
-  cond1_DT <-  as.data.frame(norm_rnaseqDT[which(geneList[rownames(norm_rnaseqDT)] %in% reg_genes), samp1,drop=F])
-  cond2_DT <- as.data.frame(norm_rnaseqDT[which(geneList[rownames(norm_rnaseqDT)] %in% reg_genes), samp2,drop=F])
+  cond1_DT <-  as.data.frame(fpkm_rnaseqDT[which(geneList[rownames(fpkm_rnaseqDT)] %in% reg_genes), samp1,drop=F])
+  cond2_DT <- as.data.frame(fpkm_rnaseqDT[which(geneList[rownames(fpkm_rnaseqDT)] %in% reg_genes), samp2,drop=F])
   
   reg_genes_avgExpr_cond1 <- rowMeans(cond1_DT)
   reg_genes_avgExpr_cond2 <- rowMeans(cond2_DT)
@@ -143,6 +144,15 @@ cat(paste0("... end Wilcoxon tests\n"))
 
 outFile <- file.path(curr_outFold, "wilcox_pairedTAD_meanExpr_fpkm.Rdata")
 save(wilcox_pairedTAD_meanExpr_fpkm, file= outFile)
+cat(paste0("... written: ", outFile, "\n"))
+
+wilcox_pairedTAD_meanExpr_wilcoxStat <- unlist(lapply(wilcox_pairedTAD_meanExpr_fpkm, function(x) {
+  x[["wilcoxTest_stat"]]
+}))
+names(wilcox_pairedTAD_meanExpr_wilcoxStat) <- names(wilcox_pairedTAD_meanExpr_fpkm)
+
+outFile <- file.path(curr_outFold, "wilcox_pairedTAD_meanExpr_wilcoxStat.Rdata")
+save(wilcox_pairedTAD_meanExpr_wilcoxStat, file= outFile)
 cat(paste0("... written: ", outFile, "\n"))
 
 

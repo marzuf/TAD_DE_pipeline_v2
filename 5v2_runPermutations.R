@@ -60,8 +60,6 @@ printAndLog(txt, pipLogFile)
 txt <- paste0("settingF\t=\t", settingF, "\n")
 printAndLog(txt, pipLogFile)
 
-
-
 ################################****************************************************************************************
 ####################################################### PREPARE INPUT
 ################################****************************************************************************************
@@ -108,8 +106,6 @@ if(useTADonly) {
 
 cat("... Start permutations\n")
 
-nRandom=2
-
 nGenesByTAD <- setNames(as.numeric(table(gene2tadDT$region)), as.character(names(table(gene2tadDT$region))))
 
 stopifnot(pipeline_regionList %in% names(nGenesByTAD))
@@ -120,6 +116,9 @@ tad_set <- names(nGenesByTAD)
 
 
 shuffleData <- foreach(i_simu = 1:nRandom, .combine='cbind') %dopar% {
+  
+  cat("> start ", i_simu, "/", nRandom, "\n")
+  
   i=0
   # while(nrow(random_g2t) < nrow(gene2tadDT)){
   while(TRUE){  # => in the while block, I should generate random_g2t
@@ -209,6 +208,40 @@ printAndLog(txt, pipLogFile)
 
 outFile <- file.path(curr_outFold, "permutationsDT.Rdata")
 save(permutationsDT, file = outFile)
+cat(paste0("... written: ", outFile, "\n"))
+
+obs_dt <- gene2tadDT
+
+nbrSameTAD_obs_permut <- foreach(i=1:ncol(permutationsDT)) %dopar% {
+  cat(i, "***\n")
+  stopifnot(geneList == rownames(permutationsDT))
+  
+  all_permut_tads <- unique(as.character(permutationsDT[,i]))
+  stopifnot(setequal(all_permut_tads, obs_dt$region))
+  
+  permut_g2t <- setNames(permutationsDT[,i], rownames(permutationsDT) )
+  
+  exact_match <- sapply(all_permut_tads, function(x) {
+    
+    permut_genes <- names(permut_g2t)[permut_g2t == x]
+    stopifnot(length(permut_genes) > 0)
+    
+    obs_tads <- obs_dt$region[obs_dt$entrezID %in% permut_genes ]
+    stopifnot(length(obs_tads) > 0)
+    
+    obs_genes <- obs_dt$entrezID[obs_dt$region %in% obs_tads]
+    stopifnot(length(obs_genes) > 0)
+    stopifnot(permut_genes %in% obs_genes)
+    
+    as.numeric(setequal(permut_genes, obs_genes))
+  })
+  sum(exact_match)
+  exact_match
+}
+names(nbrSameTAD_obs_permut) <- colnames(permutationsDT)
+
+outFile <- file.path(curr_outFold, "nbrSameTAD_obs_permut.Rdata")
+save(nbrSameTAD_obs_permut, file = outFile)
 cat(paste0("... written: ", outFile, "\n"))
 
 txt <- paste0(startTime, "\n", Sys.time(), "\n")
