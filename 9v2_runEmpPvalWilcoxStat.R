@@ -29,6 +29,8 @@ startTime <- Sys.time()
 # - emp_pval_wilcoxStat.Rdata + plots
 ################################################################################
 
+nCpu <- 70
+
 SSHFS <- F
 setDir <- ifelse(SSHFS, "/media/electron", "")
 
@@ -92,7 +94,7 @@ obs_TADwilcoxStat <- eval(parse(text = load(file.path(pipOutFold, script3_name, 
 initLen <- length(obs_TADwilcoxStat)
 stopifnot(!is.na(obs_TADwilcoxStat))
 
-permut_TADwilcoxStat_DT <- eval(parse(text = load(paste0(pipOutFold, script6_name, "wilcoxStat_permDT.Rdata"))))
+permut_TADwilcoxStat_DT <- eval(parse(text = load(file.path(pipOutFold, script6_name, "wilcoxStat_permDT.Rdata"))))
 initNrow <- nrow(permut_TADwilcoxStat_DT)
 permut_TADwilcoxStat_DT <- na.omit(permut_TADwilcoxStat_DT)
 txt <- paste0(toupper(script_name), "> Discard rows with NA in permutation Wilcox. Stat. Retain: ", nrow(permut_TADwilcoxStat_DT), "/", initNrow, "\n")
@@ -164,7 +166,7 @@ plot( x = obs_TADwilcoxStat[intersectRegions], y = log10(emp_pval_wilcoxStat[int
       pch=16, cex  = 0.7,
       main = paste0("volcano plot - emp. p-val Wilcox. Stat."),
       xlab="observed wilcoxStat",
-      ylab = "log10 (# permuted Wilcox. Stat. <> observed Wilcox. Stat.)")
+      ylab = "log10 (# observed Wilcox. Stat. <= permuted Wilcox. Stat.)")
 
 emp_pval_wilcoxStat_rank <- rank(emp_pval_wilcoxStat, ties="min")
 emp_pval_wilcoxStat_rank <- emp_pval_wilcoxStat_rank[order(emp_pval_wilcoxStat_rank)]
