@@ -30,7 +30,7 @@ source(file.path(pipScriptDir, "my_wilcox_onlyW.R"))
 
 script0_name <- "0_prepGeneData"
 script5_name <- "5_runPermutationsMedian"
-script_name <- "6v2_runPermutationsWilcoxStat"
+script_name <- "6v2onlyW_runPermutationsWilcoxStat"
 stopifnot(file.exists(paste0(pipScriptDir, "/", script_name, ".R")))
 cat(paste0("> START ", script_name,  "\n"))
 
