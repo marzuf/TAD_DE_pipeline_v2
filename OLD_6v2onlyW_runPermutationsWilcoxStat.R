@@ -168,9 +168,9 @@ stopifnot(setequal(rownames(fpkm_rnaseqDT), names(pipeline_geneList)))
 
 cat("... start Wilcoxon permutDT \n")
 
-wilcoxStat_permDT <- foreach(i_col = 1:ncol(permutationsDT), .combine='cbind') %dopar% {
-  # wilcoxStat_permDT <- foreach(i_col = 100:200, .combine='cbind') %dopar% {
-
+# wilcoxStat_permDT <- foreach(i_col = 1:ncol(permutationsDT), .combine='cbind') %dopar% {
+  wilcoxStat_permDT <- foreach(i_col = 1:2, .combine='cbind') %dopar% {
+    
   g2t_permDT <- data.frame(entrezID = rownames(permutationsDT), 
                            region = permutationsDT[,i_col], stringsAsFactors = F)
   
@@ -180,15 +180,38 @@ wilcoxStat_permDT <- foreach(i_col = 1:ncol(permutationsDT), .combine='cbind') %
   
   cat("... start Wilcoxon tests permut ", i_col, "\t", ncol(permutationsDT) , "\n")
   # timed:   
-  # sappply faster compared to %do%
+  # sappply version: 1:20
+  # utilisateur     système      écoulé 
+  # 41.178       0.403      46.775 
+  # %do% version: 1:20
+  # utilisateur     système      écoulé 
+  # 38.342       0.240      40.391 
   
-  wilcox_pairedTAD_meanExpr_fpkm <- sapply(c(1:length(curr_regions)), function(i_reg) {
+  wilcox_pairedTAD_meanExpr_fpkm <- foreach(i_reg = c(1:length(curr_regions)), .combine='cbind') %do% {
     cat(paste0("...... wilcox tests, permut i_col: ", i_col, " - region ", i_reg, "/", length(curr_regions), "\n"))
     reg <- curr_regions[i_reg]
     perm_genes <- as.character(g2t_permDT$entrezID[g2t_permDT$region == reg])
+    
     perm_genes_fpkm <- names(pipeline_geneList)[pipeline_geneList %in% perm_genes]
     stopifnot(  perm_genes_fpkm %in% rownames(fpkm_rnaseqDT)   )
     stopifnot(  length(perm_genes_fpkm) == length(perm_genes)   )
+    
+    subData <- as.data.frame(fpkm_rnaseqDT[perm_genes_fpkm,,drop=F])
+    stopifnot(nrow(subData) == length(perm_genes))
+    
+    cond1_DT <-  subData[, samp1,drop=F]
+    cond2_DT <- subData[, samp2,drop=F]
+    
+    reg_genes_avgExpr_cond1 <- rowMeans(cond1_DT)
+    reg_genes_avgExpr_cond2 <- rowMeans(cond2_DT)
+    stopifnot(!is.na(reg_genes_avgExpr_cond1))
+    stopifnot(!is.na(reg_genes_avgExpr_cond2))
+    stopifnot(names(reg_genes_avgExpr_cond1) == names(reg_genes_avgExpr_cond2) )
+    
+    wTest <- my_wilcox_onlyW.test(reg_genes_avgExpr_cond1, reg_genes_avgExpr_cond2, 
+                         paired=wilcoxPaired, alternative=wilcoxAlternative,
+                         exact=FALSE) # don't need for the pval
+    
     
     stopifnot(perm_genes_fpkm %in% names(rowMeans_samp1))
     stopifnot(perm_genes_fpkm %in% names(rowMeans_samp2))
@@ -202,8 +225,12 @@ wilcoxStat_permDT <- foreach(i_col = 1:ncol(permutationsDT), .combine='cbind') %
                                   paired=wilcoxPaired, alternative=wilcoxAlternative,
                                   exact=FALSE) # don't need for the pval
     
-    as.numeric(wTest2$statistic)
-  }) # end-wilcox stat for current permut
+    
+    stopifnot(as.numeric(wTest$statistic) == as.numeric(wTest2$statistic))
+    
+    
+    as.numeric(wTest$statistic)
+  } # end-wilcox stat for current permut
   
   stopifnot(length(wilcox_pairedTAD_meanExpr_fpkm) == length(all_regions))
   names(wilcox_pairedTAD_meanExpr_fpkm) <- curr_regions
@@ -211,6 +238,8 @@ wilcoxStat_permDT <- foreach(i_col = 1:ncol(permutationsDT), .combine='cbind') %
   cat(paste0("... end Wilcoxon tests\n"))
   wilcox_pairedTAD_meanExpr_fpkm[all_regions]
 } #end foreach all permut
+  
+  stop("--opk")
   
 stopifnot(ncol(wilcoxStat_permDT) == ncol(permutationsDT)) # <<<<< WILL NEED TO  UPDATE
 rownames(wilcoxStat_permDT) <- all_regions

@@ -139,7 +139,10 @@ if(useTADonly) {
 
 cat("... start intraCorr permutDT \n")
 
-intraTADcorr_permDT_allReg <- foreach(i_col = 1:ncol(permutationsDT), .combine='cbind') %dopar% {
+# intraTADcorr_permDT_allReg <- foreach(i_col = 1:ncol(permutationsDT), .combine='cbind') %dopar% {
+  
+
+intraTADcorr_permDT_allReg <- foreach(i_col = 1:2, .combine='cbind') %dopar% {
   
   cat(paste0("... intraTAD correlation for permutation: ", i_col, "/", ncol(permutationsDT), "\n"))
   
@@ -150,6 +153,7 @@ intraTADcorr_permDT_allReg <- foreach(i_col = 1:ncol(permutationsDT), .combine='
   
   permutCorr <- sapply(unique(all_regions), function(reg) {
     reg_genes <- g2t_permDT$entrezID[g2t_permDT$region == reg]
+    stopifnot( reg_genes %in% geneList)
     subData <- as.data.frame(t(norm_rnaseqDT[which(geneList %in% reg_genes),,drop=F]))
     
     # THE REGIONS HERE ARE UNFILTERED, SO IT IS POSSIBLE THAT THERE ARE SOME REGIONS WITH ONLY 1 GENE
@@ -185,6 +189,9 @@ intraTADcorr_permDT_allReg <- foreach(i_col = 1:ncol(permutationsDT), .combine='
   curr_permutDT
 }
 cat("... end intraCorr permutDT \n")
+
+cat(paste0("*** DONE: ", script_name, "\n"))
+stop("-- ok\n")
 
 meanCorr_permDT <- as.data.frame(intraTADcorr_permDT_allReg)
 stopifnot(ncol(meanCorr_permDT) == ncol(permutationsDT))  

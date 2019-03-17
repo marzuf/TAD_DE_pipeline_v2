@@ -2,7 +2,7 @@
 
 
 SSHFS <- T
-setDir <- ifelse(SSHFS, "~/media/electron", "")
+setDir <- ifelse(SSHFS, "/media/electron", "")
 settingF <- file.path(setDir, "/mnt/etemp/marie/Cancer_HiC_data_TAD_DA/PIPELINE/INPUT_FILES/ENCSR401TBQ_Caki2_40kb/run_settings_TCGAkich_norm_kich.R")
 pipScriptDir <- paste0(setDir, "/mnt/ed4/marie/scripts/TAD_DE_pipeline_v2")
 
@@ -39,7 +39,7 @@ gene2tadDT$entrezID <- as.character(gene2tadDT$entrezID)
 
 #*******************************************************************************
 
-fpkm_rnaseqDT <- eval(parse(text = load(file.path(setDir, pipOutFold, script0_name, "rna_fpkmDT.Rdata"))))
+fpkm_rnaseqDT <- eval(parse(text = load(file.path( pipOutFold, script0_name, "rna_fpkmDT.Rdata"))))
 
 ########## LOAD THE DATA
 samp1 <- eval(parse(text=load(paste0(setDir, "/", sample1_file))))
@@ -100,6 +100,14 @@ if(useTADonly) {
     stop("make not sense to filter TAD regions after permutations if permutations were run with genes belonging to non-TAD regions\n")
   }
 }
+
+gene2tadDT <- gene2tadDT[gene2tadDT$entrezID %in% rownames(permutationsDT),]
+stopifnot(nrow(gene2tadDT) == nrow(permutationsDT))
+
+fpkm_rnaseqDT <- fpkm_rnaseqDT[rownames(fpkm_rnaseqDT) %in% as.character(gene2tadDT$entrezID), ]
+rowMeans_samp1 <- rowMeans(fpkm_rnaseqDT[,samp1 ])
+rowMeans_samp2 <- rowMeans(fpkm_rnaseqDT[,samp2])
+stopifnot(names(rowMeans_samp1) == names(rowMeans_samp2))
 
 ################################****************************************************************************************
 ######################################################## COMPUTE MEAN LOG FC BY TAD FOR THE PERMUTATIONS
@@ -180,6 +188,9 @@ wilcoxStat_permDT <- foreach(i_col = 1:ncol(permutationsDT), .combine='cbind') %
   # sappply version: 1:20 - wTest2 - changed subset
   utilisateur     système      écoulé 
   15.141       0.109      15.392 
+  
+  user  system elapsed 
+  0.203   0.000   0.203 
 
   system.time(wilcox_pairedTAD_meanExpr_fpkm <- foreach(i_reg=c(1:length(curr_regions))[1:20], .combine='c') %do% {
     cat(paste0("...... wilcox tests, region ", i_reg, "/", length(curr_regions), "\n"))
@@ -199,6 +210,29 @@ wilcoxStat_permDT <- foreach(i_col = 1:ncol(permutationsDT), .combine='cbind') %
     wTest <- wilcox.test(reg_genes_avgExpr_cond1, reg_genes_avgExpr_cond2, paired=wilcoxPaired, alternative=wilcoxAlternative) 
     as.numeric(wTest$statistic)
   }) # end-wilcox stat for current permut
+  
+  
+  
+  system.time(wilcox_pairedTAD_meanExpr_fpkm <- foreach(i_reg=c(1:length(curr_regions))[1:20], .combine='c') %do% {
+    cat(paste0("...... wilcox tests, region ", i_reg, "/", length(curr_regions), "\n"))
+    reg <- curr_regions[i_reg]
+    reg_genes <- gene2tadDT$entrezID[gene2tadDT$region == reg]
+    subData <- as.data.frame(fpkm_rnaseqDT[which(pipeline_geneList[rownames(fpkm_rnaseqDT)] %in% reg_genes),,drop=F])
+    
+    cond1_DT <- subData[, samp1,drop=F]
+    cond2_DT <- subData[, samp2,drop=F]
+    
+    reg_genes_avgExpr_cond1 <- rowMeans(cond1_DT)
+    reg_genes_avgExpr_cond2 <- rowMeans(cond2_DT)
+    stopifnot(!is.na(reg_genes_avgExpr_cond1))
+    stopifnot(!is.na(reg_genes_avgExpr_cond2))
+    stopifnot(names(reg_genes_avgExpr_cond1) == names(reg_genes_avgExpr_cond2) )
+    
+    wTest <- wilcox.test(reg_genes_avgExpr_cond1, reg_genes_avgExpr_cond2, paired=wilcoxPaired, alternative=wilcoxAlternative) 
+    as.numeric(wTest$statistic)
+  }) # end-wilcox stat for current permut
+  
+  
   
   source(paste0(setDir, "/mnt/ed4/marie/scripts/TAD_DE_pipeline_v2/my_wilcox_onlyW.R"))
   system.time(wilcox_pairedTAD_meanExpr_fpkm2 <- foreach(i_reg=c(1:length(curr_regions))[1:20], .combine='c') %do% {
@@ -225,7 +259,44 @@ wilcoxStat_permDT <- foreach(i_col = 1:ncol(permutationsDT), .combine='cbind') %
   
   
   
+  source(paste0(setDir, "/mnt/ed4/marie/scripts/TAD_DE_pipeline_v2/my_wilcox_onlyW.R"))
+  system.time(wilcox_pairedTAD_meanExpr_fpkm3 <- foreach(i_reg=c(1:length(curr_regions))[1:1000], .combine='c') %do% {
+    cat(paste0("...... wilcox tests, region ", i_reg, "/", length(curr_regions), "\n"))
+    reg <- curr_regions[i_reg]
+    reg_genes <- gene2tadDT$entrezID[gene2tadDT$region == reg]
+    stopifnot(reg_genes %in% names(rowMeans_samp1))
+    reg_genes_avgExpr_cond1 <- rowMeans_samp1[reg_genes]
+    reg_genes_avgExpr_cond2 <- rowMeans_samp2[reg_genes]
+    stopifnot(!is.na(reg_genes_avgExpr_cond1))
+    stopifnot(!is.na(reg_genes_avgExpr_cond2))
+    stopifnot(names(reg_genes_avgExpr_cond1) == names(reg_genes_avgExpr_cond2) )
+    wTest2 <- my_wilcox_onlyW.test(reg_genes_avgExpr_cond1, reg_genes_avgExpr_cond2, paired=wilcoxPaired, alternative=wilcoxAlternative) 
+    as.numeric(wTest2$statistic)
+  }) # end-wilcox stat for current permut
+  user  system elapsed 
+  0.493   0.047   0.534 
+  user  system elapsed 
+  0.220   0.002   0.219 
   
+  source(paste0(setDir, "/mnt/ed4/marie/scripts/TAD_DE_pipeline_v2/my_wilcox_onlyW.R"))
+  system.time(wilcox_pairedTAD_meanExpr_fpkm3 <- sapply(c(1:length(curr_regions))[1:1000],function(i_reg){
+    cat(paste0("...... wilcox tests, region ", i_reg, "/", length(curr_regions), "\n"))
+    reg <- curr_regions[i_reg]
+    reg_genes <- gene2tadDT$entrezID[gene2tadDT$region == reg]
+    stopifnot(reg_genes %in% names(rowMeans_samp1))
+    reg_genes_avgExpr_cond1 <- rowMeans_samp1[reg_genes]
+    reg_genes_avgExpr_cond2 <- rowMeans_samp2[reg_genes]
+    stopifnot(!is.na(reg_genes_avgExpr_cond1))
+    stopifnot(!is.na(reg_genes_avgExpr_cond2))
+    stopifnot(names(reg_genes_avgExpr_cond1) == names(reg_genes_avgExpr_cond2) )
+    wTest2 <- my_wilcox_onlyW.test(reg_genes_avgExpr_cond1, reg_genes_avgExpr_cond2, paired=wilcoxPaired, alternative=wilcoxAlternative) 
+    as.numeric(wTest2$statistic)
+    wTest2
+  })) # end-wilcox stat for current permut
+  user  system elapsed 
+  0.419   0.038   0.453 
+  user  system elapsed 
+  0.200   0.000   0.198 
   
   
   

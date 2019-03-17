@@ -134,7 +134,6 @@ if(useTADonly) {
 ### REGIONS ARE STORED IN ROWNAMES OF PERMUTdt
 
 cat("... start logFC permutDT \n")
-
 logFC_permDT <- foreach(i_col = 1:ncol(permutationsDT), .combine='cbind') %dopar% {
   cat(paste0("...TAD logFC for permutation: ", i_col, "/", ncol(permutationsDT), "\n"))  
   
@@ -146,6 +145,7 @@ logFC_permDT <- foreach(i_col = 1:ncol(permutationsDT), .combine='cbind') %dopar
   unlist(sapply(unique(all_regions), function(x) {
     reg_genes <- g2t_permDT$entrezID[which(g2t_permDT$region == x)]
     # head(reg_genes)
+    stopifnot(reg_genes %in% logFC_DT$entrezID)
     mean(logFC_DT$logFC[logFC_DT$entrezID %in% reg_genes], na.rm=T)
   }))
 }
