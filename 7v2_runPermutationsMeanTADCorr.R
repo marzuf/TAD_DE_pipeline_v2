@@ -2,6 +2,8 @@
 
 startTime <- Sys.time()
 
+### !!! NB 02.07.2019 THE cor() FUNCTION IS USED WITHOUT PASSING THE CORRELATION METHOD PARAMETER !!! -> DEFAULT "pearson"
+
 ##### 03.03.2019: V2 VERSION
 # -> take as input script5v2 instead of script5 for the permutationsDT !!!
 # otherwise similar

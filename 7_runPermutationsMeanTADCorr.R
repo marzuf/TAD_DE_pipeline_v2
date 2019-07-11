@@ -2,6 +2,8 @@
 
 startTime <- Sys.time()
 
+### !!! NB 02.07.2019 THE cor() FUNCTION IS USED WITHOUT PASSING THE CORRELATION METHOD PARAMETER !!! -> DEFAULT "pearson"
+
 ################  USE THE FOLLOWING FILES FROM PREVIOUS STEPS
 # - script0: pipeline_regionList.Rdata
 # - script0: pipeline_geneList.Rdata
@@ -85,7 +87,9 @@ stopifnot(!any(duplicated(names(geneList))))
 
 gene2tadDT <- read.delim(gene2tadDT_file, header=F, col.names = c("entrezID", "chromo", "start", "end", "region"), stringsAsFactors = F)
 gene2tadDT$entrezID <- as.character(gene2tadDT$entrezID)
-gene2tadDT <- gene2tadDT[gene2tadDT$entrezID %in% names(geneList),]
+gene2tadDT <- gene2tadDT[gene2tadDT$entrezID %in% names(geneList),] 
+# !!! 02.07.2019: THIS IS WRONG => gene2tadDT should be subset using geneList not names(geneList) !!!
+# => but this is ok because gene2tadDT is not used later in the script
 
 cat("... load permutation data ...\n")
 permutationsDT <- eval(parse(text = load(paste0(pipOutFold, "/", script5_name, "/permutationsDT.Rdata"))))
@@ -139,10 +143,8 @@ if(useTADonly) {
 
 cat("... start intraCorr permutDT \n")
 
-# intraTADcorr_permDT_allReg <- foreach(i_col = 1:ncol(permutationsDT), .combine='cbind') %dopar% {
-  
-
-intraTADcorr_permDT_allReg <- foreach(i_col = 1:2, .combine='cbind') %dopar% {
+intraTADcorr_permDT_allReg <- foreach(i_col = 1:ncol(permutationsDT), .combine='cbind') %dopar% {
+#intraTADcorr_permDT_allReg <- foreach(i_col = 1:2, .combine='cbind') %dopar% {
   
   cat(paste0("... intraTAD correlation for permutation: ", i_col, "/", ncol(permutationsDT), "\n"))
   
@@ -191,7 +193,7 @@ intraTADcorr_permDT_allReg <- foreach(i_col = 1:2, .combine='cbind') %dopar% {
 cat("... end intraCorr permutDT \n")
 
 cat(paste0("*** DONE: ", script_name, "\n"))
-stop("-- ok\n")
+#stop("-- ok\n")
 
 meanCorr_permDT <- as.data.frame(intraTADcorr_permDT_allReg)
 stopifnot(ncol(meanCorr_permDT) == ncol(permutationsDT))  

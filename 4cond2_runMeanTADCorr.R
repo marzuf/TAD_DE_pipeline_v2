@@ -25,7 +25,7 @@ pipScriptDir <- paste0(setDir, "/mnt/ed4/marie/scripts/TAD_DE_pipeline_v2")
 
 script0_name <- "0_prepGeneData"
 script1_name <- "1_runGeneDE"
-script_name <- "4_runMeanTADCorr"
+script_name <- "4cond2_runMeanTADCorr"
 stopifnot(file.exists(paste0(pipScriptDir, "/", script_name, ".R")))
 cat(paste0("> START ", script_name,  "\n"))
 
@@ -65,6 +65,11 @@ txt <- paste0(toupper(script_name), "> Correlation method: ",  toTitleCase(corrM
 printAndLog(txt, pipLogFile)
 #*******************************************************************************
 
+
+##### TAKE ONLY THE SAMPLES OF INTEREST
+samp2 <- eval(parse(text=load(paste0(setDir, "/", sample2_file))))
+
+
 ################################****************************************************************************************
 ################################********************************************* PREPARE INPUT
 ################################****************************************************************************************
@@ -84,6 +89,10 @@ printAndLog(txt, pipLogFile)
 norm_rnaseqDT <- norm_rnaseqDT[names(geneList),]    
 stopifnot(all(rownames(norm_rnaseqDT) == names(geneList)))
 stopifnot(!any(duplicated(names(geneList))))
+
+### ADDED HERE: TAKE ONLY THE SAMPLES FROM COND1
+stopifnot(samp2 %in% colnames(norm_rnaseqDT))
+norm_rnaseqDT <- norm_rnaseqDT[,c(samp2)]
 
 # INPUT DATA
 gene2tadDT <- read.delim(gene2tadDT_file, header=F, col.names = c("entrezID", "chromo", "start", "end", "region"), stringsAsFactors = F)
@@ -119,7 +128,7 @@ if(useTADonly) {
 
 cat(paste0("... start intra TAD correlation\n"))
 
-all_meanCorr_TAD <- foreach(reg=all_regions, .combine='c') %dopar% {
+all_meanCorr_TAD_cond2 <- foreach(reg=all_regions, .combine='c') %dopar% {
   # cat(paste0("... doing region: ", reg, "/", length(all_regions), "\n"))
   reg_genes <- gene2tadDT$entrezID[gene2tadDT$region == reg]
 
@@ -149,11 +158,11 @@ all_meanCorr_TAD <- foreach(reg=all_regions, .combine='c') %dopar% {
 
 cat(paste0("... end intra TAD correlation\n"))
 
-names(all_meanCorr_TAD) <- all_regions
-stopifnot(length(all_meanCorr_TAD) == length(all_regions))
+names(all_meanCorr_TAD_cond2) <- all_regions
+stopifnot(length(all_meanCorr_TAD_cond2) == length(all_regions))
 
-save(all_meanCorr_TAD, file= paste0(curr_outFold, "/all_meanCorr_TAD.Rdata"))
-cat(paste0("... written: ", curr_outFold, "/all_meanCorr_TAD.Rdata", "\n"))
+save(all_meanCorr_TAD_cond2, file= paste0(curr_outFold, "/all_meanCorr_TAD_cond2.Rdata"))
+cat(paste0("... written: ", curr_outFold, "/all_meanCorr_TAD_cond2.Rdata", "\n"))
 
 txt <- paste0(startTime, "\n", Sys.time(), "\n")
 printAndLog(txt, pipLogFile)
