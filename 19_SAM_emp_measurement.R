@@ -1,5 +1,7 @@
 #!/usr/bin/Rscript
 
+options(scipen=100)
+
 startTime <- Sys.time()
 
 suppressPackageStartupMessages(library(data.table, warn.conflicts = FALSE, quietly = TRUE, verbose = FALSE))
@@ -84,6 +86,7 @@ permutDT_logFC <- eval(parse(text = load(shuff_logFC_file)))
 
 # because this is absolute logFC
 cut_off_seq_logFC <- seq(0,5,0.5)
+cut_off_seq_logFC <- seq(0,5,0.05) # MZ: UPDATE 16.07.2019
 
 ############# intraCorr
 # obs_intraCorr_file <- file.path(curr_outFold, script4_name, "all_meanCorr_TAD.Rdata")
@@ -97,6 +100,7 @@ stopifnot(file.exists(shuff_intraCorr_file))
 permutDT_intraCorr <- eval(parse(text = load(shuff_intraCorr_file)))
 
 cut_off_seq_intraCorr <- seq(0,1,0.1)
+cut_off_seq_intraCorr <- seq(0,1,0.01)# MZ: UPDATE 16.07.2019
 
 ############# ratioDown
 # obs_ratioDown_file <- file.path(curr_outFold, script8_name, "all_obs_ratioDown.Rdata")

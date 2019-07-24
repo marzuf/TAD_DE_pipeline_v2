@@ -2,6 +2,10 @@
 
 startTime <- Sys.time()
 
+
+options(scipen=100)
+### !!! UPDATE 24.07.19: STOUFFER ONE-SIDED
+
 ################  USE THE FOLLOWING FILES FROM PREVIOUS STEPS
 # - script3: all_meanLogFC_TAD.Rdata
 # - script8: all_obs_ratioDown.Rdata
@@ -27,8 +31,8 @@ script0_name <- "0_prepGeneData"
 script1_name <- "1_runGeneDE"
 script3_name <- "3_runMeanTADLogFC"
 script8_name <- "8c_runAllDown"
-script9_name <- "9_runEmpPvalMeanTADLogFC"
-script10_name <- "10_runEmpPvalMeanTADCorr"
+script9rank_name <- "9rank_runEmpPvalMeanTADLogFC"
+script10rank_name <- "10rank_runEmpPvalMeanTADCorr"
 script_name <- "11_runEmpPvalCombined"
 stopifnot(file.exists(paste0(pipScriptDir, "/", script_name, ".R")))
 cat(paste0("> START ", script_name,  "\n"))
@@ -57,10 +61,10 @@ printAndLog(txt, pipLogFile)
 ####################################################### PREPARE INPUT
 ################################****************************************************************************************
 # load emp. p-val logFC 
-emp_pval_logFC_rank <- eval(parse(text = load(paste0(pipOutFold, "/", script9_name, "/emp_pval_meanLogFC_rank.Rdata"))))
+emp_pval_logFC_rank <- eval(parse(text = load(paste0(pipOutFold, "/", script9rank_name, "/emp_pval_meanLogFC_rank.Rdata"))))
 
 # load emp. p-val intraTAD corr
-emp_pval_intraCorr_rank <- eval(parse(text = load(paste0(pipOutFold, "/", script10_name, "/emp_pval_meanCorr_rank.Rdata"))))
+emp_pval_intraCorr_rank <- eval(parse(text = load(paste0(pipOutFold, "/", script10rank_name, "/emp_pval_meanCorr_rank.Rdata"))))
 
 intersectRegions <- sort(intersect(names(emp_pval_logFC_rank), names(emp_pval_intraCorr_rank)))
 txt <- paste0(toupper(script_name), "> Take regions in common between permutations and observed data \n")
@@ -103,7 +107,7 @@ stopifnot(all(names(emp_pval_logFC_rank) == names(emp_pval_intraCorr_rank)))
 
 # COMBINE EMPIRICAL P-VALUES
 emp_pval_combined_rank <- unlist(sapply(seq_along(intersectRegions), function(x) 
-                  stouffer(c(emp_pval_intraCorr_rank[x], emp_pval_logFC_rank[x]), two.tails = TRUE)))
+                  stouffer(c(emp_pval_intraCorr_rank[x], emp_pval_logFC_rank[x]), two.tails = FALSE)))
 names(emp_pval_combined_rank) <- intersectRegions
 
 stopifnot(length(emp_pval_combined_rank) == length(intersectRegions))

@@ -2,6 +2,8 @@
 
 startTime <- Sys.time()
 
+options(scipen=100)
+
 ################  USE THE FOLLOWING FILES FROM PREVIOUS STEPS
 # - script0: pipeline_regionList.Rdata
 # - script0: pipeline_geneList.Rdata

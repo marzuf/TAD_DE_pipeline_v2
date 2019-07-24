@@ -1,5 +1,7 @@
 #!/usr/bin/Rscript
 
+options(scipen=100)
+
 startTime <- Sys.time()
 
 ### !!! NB 02.07.2019 THE cor() FUNCTION IS USED WITHOUT PASSING THE CORRELATION METHOD PARAMETER !!! -> DEFAULT "pearson"

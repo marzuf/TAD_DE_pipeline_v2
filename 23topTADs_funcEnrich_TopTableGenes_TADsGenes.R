@@ -1,5 +1,7 @@
 #!/usr/bin/Rscript
 
+options(scipen=100)
+
 startTime <- Sys.time()
 
 # 23_ => was doing enrichment analysis for funcTADs_nTopTADs genes, then taking the same number of genes to do for topTable DE genes

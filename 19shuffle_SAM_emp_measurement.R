@@ -1,5 +1,7 @@
 #!/usr/bin/Rscript
 
+options(scipen=100)
+
 startTime <- Sys.time()
 
 suppressPackageStartupMessages(library(data.table, warn.conflicts = FALSE, quietly = TRUE, verbose = FALSE))

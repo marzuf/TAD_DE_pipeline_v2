@@ -1,5 +1,7 @@
 #!/usr/bin/Rscript
 
+options(scipen=100)
+
 startTime <- Sys.time()
 
 #### UPDATE: do not take raw counts but fpkm data !!!

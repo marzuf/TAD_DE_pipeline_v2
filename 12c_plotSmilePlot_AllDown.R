@@ -1,5 +1,7 @@
 #!/usr/bin/Rscript
 
+options(scipen=100)
+
 startTime <- Sys.time()
 
 ################  USE THE FOLLOWING FILES FROM PREVIOUS STEPS
@@ -49,6 +51,7 @@ txt <- paste0("gene2tadDT_file\t=\t", gene2tadDT_file, "\n")
 printAndLog(txt, pipLogFile)
 txt <- paste0("TADpos_file\t=\t", TADpos_file, "\n")
 printAndLog(txt, pipLogFile)
+
 txt <- paste0("settingF\t=\t", settingF, "\n")
 printAndLog(txt, pipLogFile)
 

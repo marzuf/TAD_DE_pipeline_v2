@@ -1,5 +1,7 @@
 #!/usr/bin/Rscript
 
+options(scipen=100)
+
 # UPDATE 19.06.2018: ADDED 13EZH2_ because 13_ was modified to not be used anymore but to use 13cleanInput instead in the meantime
 #stop("why don't you use cleanInput ?\n")
 

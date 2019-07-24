@@ -1,5 +1,8 @@
 startTime <- Sys.time()
 
+options(scipen=100)
+
+
 SSHFS <- F
 setDir <- ifelse(SSHFS, "/media/electron", "")
 

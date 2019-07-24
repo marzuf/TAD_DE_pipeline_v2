@@ -1,5 +1,7 @@
 #!/usr/bin/Rscript
 
+options(scipen=100)
+
 startTime <- Sys.time()
 
 ################  USE THE FOLLOWING FILES FROM PREVIOUS STEPS
@@ -106,11 +108,11 @@ printAndLog(txt, pipLogFile)
 stopifnot( setequal(intersectRegions, rownames(permut_intraTADcorr_DT) ))
 
 # take -x to have decreasing ranking
-rank_meanCorr_permDT <- apply(permut_intraTADcorr_DT, 2 , function(x) rank(-x, ties=tiesMeth))
+rank_meanCorr_permDT <- apply(permut_intraTADcorr_DT, 2 , function(x) rank(-x, ties=tiesMet))
 max1_idx <- which(rownames(permut_intraTADcorr_DT) == names(which(rank_meanCorr_permDT[,1] == 1)))
 stopifnot(permut_intraTADcorr_DT[-max1_idx,1] <  permut_intraTADcorr_DT[max1_idx,1])
 
-stopifnot( setequal(all_regions, rownames(rank_meanCorr_permDT) ))
+stopifnot( setequal(intersectRegions, rownames(rank_meanCorr_permDT) ))
 
 
 
@@ -140,7 +142,7 @@ emp_pval_meanCorr_rank <- unlist(foreach(reg = intersectRegions, .combine='c') %
   all_shuff_meanCorr_rank <- rank_meanCorr_permDT[paste0(reg),]
   stopifnot(length(all_shuff_meanCorr_rank) == ncol(rank_meanCorr_permDT))
   # select the observed value for this region
-  obs_rank <- meanCorr_obs_rank[reg]
+  obs_rank <- obs_intraTADcorr_rank[reg]
   stopifnot(length(obs_rank) == 1 )
   # the number of times the permut rank is smaller than the observed one
   # => the pvalue will be high if the permutation often a smaller rank
@@ -149,7 +151,7 @@ emp_pval_meanCorr_rank <- unlist(foreach(reg = intersectRegions, .combine='c') %
   ### ADD THE +1 => THIS IS FOR THE OBSERVED VALUE -> AVOID THE 0 VALUES !!!
   (emp_pval+1)/(length(all_shuff_meanCorr_rank)+1)
 })
-names(emp_pval_meanCorr_rank) <- all_regions
+names(emp_pval_meanCorr_rank) <- intersectRegions
 
 stopifnot(all(emp_pval_meanCorr_rank > 0 & emp_pval_meanCorr_rank <= 1 ))
 

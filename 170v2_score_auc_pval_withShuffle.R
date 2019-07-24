@@ -1,5 +1,6 @@
 startTime <- Sys.time()
 
+options(scipen=100)
 
 ### => in the folder 170v0: this was with the other version of computing the AUC ratio for the shuffTADs
 ### i.e. by taking the difference between the 2 curves without cutting at the end of the permutated curve (shorter)

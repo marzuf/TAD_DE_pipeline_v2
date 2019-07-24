@@ -1,5 +1,7 @@
 #!/usr/bin/Rscript
 
+options(scipen=100)
+
 stop("why don't you use cleanInput ?\n")
 
 startTime <- Sys.time()

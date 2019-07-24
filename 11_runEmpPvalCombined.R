@@ -1,6 +1,10 @@
 #!/usr/bin/Rscript
 
+options(scipen=100)
+
 startTime <- Sys.time()
+
+### !!! UPDATE 24.07.19: STOUFFER ONE-SIDED
 
 ################  USE THE FOLLOWING FILES FROM PREVIOUS STEPS
 # - script3: all_meanLogFC_TAD.Rdata
@@ -103,7 +107,7 @@ stopifnot(all(names(emp_pval_logFC) == names(emp_pval_intraCorr)))
 
 # COMBINE EMPIRICAL P-VALUES
 emp_pval_combined <- unlist(sapply(seq_along(intersectRegions), function(x) 
-                  stouffer(c(emp_pval_intraCorr[x], emp_pval_logFC[x]), two.tails = TRUE)))
+                  stouffer(c(emp_pval_intraCorr[x], emp_pval_logFC[x]), two.tails = FALSE)))
 names(emp_pval_combined) <- intersectRegions
 
 stopifnot(length(emp_pval_combined) == length(intersectRegions))
