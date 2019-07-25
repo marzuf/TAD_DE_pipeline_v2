@@ -4,7 +4,7 @@ options(scipen=100)
 
 startTime <- Sys.time()
 
-### !!! NB 02.07.2019 THE cor() FUNCTION IS USED WITHOUT PASSING THE CORRELATION METHOD PARAMETER !!! -> DEFAULT "pearson"
+### !!! HARD CODED corMet "pearson"
 
 ################  USE THE FOLLOWING FILES FROM PREVIOUS STEPS
 # - script0: pipeline_regionList.Rdata
@@ -44,6 +44,7 @@ source(file.path(pipScriptDir,  "TAD_DE_utils_meanCorr.R"))
 suppressPackageStartupMessages(library(foreach, warn.conflicts = FALSE, quietly = TRUE, verbose = FALSE))
 suppressPackageStartupMessages(library(doMC, warn.conflicts = FALSE, quietly = TRUE, verbose = FALSE))
 registerDoMC(ifelse(SSHFS, 2, nCpu)) # from main_settings.R
+suppressPackageStartupMessages(library(reshape2, warn.conflicts = FALSE, quietly = TRUE, verbose = FALSE))
 
 # if microarray was not set in the settings file -> by default set to  FALSE
 if(!exists("microarray")) microarray <- FALSE
@@ -62,6 +63,11 @@ txt <- paste0("TADpos_file\t=\t", TADpos_file, "\n")
 printAndLog(txt, pipLogFile)
 txt <- paste0("settingF\t=\t", settingF, "\n")
 printAndLog(txt, pipLogFile)
+
+corrMeth <- "pearson"
+txt <- paste0("corrMeth\t=\t", corrMeth, "\n")
+printAndLog(txt, pipLogFile)
+
 
 
 
@@ -99,8 +105,9 @@ norm_rnaseqDT <- qqnormDT[names(geneList),]    # !!! ENSURE THAT THE QQNORM IN T
 stopifnot(rownames(norm_rnaseqDT) == names(geneList))
 stopifnot(!duplicated(names(geneList)))
 
-ds_sample_data <- file.path(pipOutFold, script5sameNbr_name, "sample_around_TADs_sameNbr.Rdata")
-
+ds_sample_data_file <- file.path(pipOutFold, script5sameNbr_name, "sample_around_TADs_sameNbr.Rdata")
+stopifnot(file.exists(ds_sample_data_file))
+ds_sample_data <- eval(parse(text = load(ds_sample_data_file)))
 
 all_regs <- names(ds_sample_data)
 stopifnot(setequal(all_regs, regionList))
@@ -289,7 +296,7 @@ meanCorr_sample_around_TADs_sameNbr <- foreach(reg = all_regs) %dopar% {
 } # end iterating over all regions
 names(meanCorr_sample_around_TADs_sameNbr) <- all_regs 
 
-outFile <- file.path(outFolder, "meanCorr_sample_around_TADs_sameNbr.Rdata")
+outFile <- file.path(curr_outFold, "meanCorr_sample_around_TADs_sameNbr.Rdata")
 save(meanCorr_sample_around_TADs_sameNbr, file = outFile)
 cat(paste0("... written: ", outFile, "\n"))
 

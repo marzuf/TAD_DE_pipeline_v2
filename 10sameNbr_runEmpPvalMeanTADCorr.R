@@ -64,8 +64,6 @@ corr_type <- "meanCorr"
 txt <- paste0("taking sample correlation for corr_type\t=\t", settingF, "\n")
 printAndLog(txt, pipLogFile)
 
-
-
 ### RETRIEVE ALL THE FILES IN THE FOLDER !!!
 mainPipFold <- dirname(dirname(pipOutFold))
 txt <- paste0("!!! take all the files matching \"meanCorr_sample_around_TADs_sameNbr.Rdata\" in ", mainPipFold, "\n")
@@ -74,16 +72,17 @@ printAndLog(txt, pipLogFile)
 all_sampleCorr_files <- list.files(mainPipFold, pattern="meanCorr_sample_around_TADs_sameNbr.Rdata", full.names = TRUE, recursive = TRUE)
 all_hicds <- list.files(mainPipFold)
 all_exprds <- sapply(all_hicds, function(x) list.files(file.path(mainPipFold, x)))
+
+
 stopifnot(length(all_sampleCorr_files) == length(unlist(all_exprds)))
 
 
 ### PREPARE THE SAMPLE CORR VALUES FROM ALL DATASETS
+corr_file="/media/electron/mnt/etemp/marie/Yuanlong_Cancer_HiC_data_TAD_DA/PIPELINE/OUTPUT_FOLDER/GSE105381_HepG2_40kb/TCGAlihc_norm_lihc/7sameNbr_runPermutationsMeanTADCorr/meanCorr_sample_around_TADs_sameNbr.Rdata"
 all_sample_corrValues <- foreach(corr_file = all_sampleCorr_files, .combine='c') %dopar% {
   stopifnot(file.exists(corr_file))
-  corr_data <- load(corr_file)
-  all_samp_corrs <-  unlist(lapply(corr_data, function(sub_data){
-    lapply(sub_data, function(x) x[[paste0(corr_type)]])
-  }))
+  corr_data <- eval(parse(text = load(corr_file)))
+  all_samp_corrs <- as.numeric(sapply(corr_data, function(x) x[[paste0(corr_type)]]))
   stopifnot(!is.null(all_samp_corrs))
   all_samp_corrs <- na.omit(all_samp_corrs)  
   all_samp_corrs

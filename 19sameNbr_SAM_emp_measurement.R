@@ -6,12 +6,6 @@ startTime <- Sys.time()
 
 suppressPackageStartupMessages(library(data.table, warn.conflicts = FALSE, quietly = TRUE, verbose = FALSE))
 
-# empirical FDR
-# logFC as effect size (measure of actual difference I want)
-
-# rank by logFC
-# set a cut-off k above which I say as significant
-# N = number of real solutions with logFC > k
 
 # for each permutation, compute how many solutions greater than k
 # R = average number of random solutions with logFC > k
@@ -21,7 +15,6 @@ suppressPackageStartupMessages(library(data.table, warn.conflicts = FALSE, quiet
 SSHFS <- F
 setDir <- ifelse(SSHFS, "/media/electron", "")
 
-source(paste0(setDir, "/mnt/ed4/marie/scripts/RNA_seq_v2_before0405/RNAseq_fct.R"))
 
 pipScriptDir <- paste0(setDir, "/mnt/ed4/marie/scripts/TAD_DE_pipeline_v2")
 
@@ -45,6 +38,7 @@ cat(paste0("> START ", script_name,  "\n"))
 source("main_settings.R") # setDir is the main_settings not in run_settings
 source(settingF)
 source(paste0(pipScriptDir, "/", "TAD_DE_utils.R"))
+source(paste0(pipScriptDir, "/", "TAD_DE_utils_meanCorr.R"))
 
 
 # create the directories
@@ -57,6 +51,20 @@ myHeight <- ifelse(plotType == "png", 480, 7)
 myWidth <- ifelse(plotType == "png", 600, 10)
 
 fixCutOffSeq <- TRUE
+
+
+k_cut_off <- 0.5
+
+cut_off_seq_intraCorr <- seq(0,1,0.01)
+
+sort_plotQuantileCutOff <- TRUE
+
+
+corr_type <- "meanCorr"
+txt <- paste0("taking sample correlation for corr_type\t=\t", settingF, "\n")
+printAndLog(txt, pipLogFile)
+
+
 
 #**************************************************************************************************** COMBINED LOG FC AND INTRA TAD CORR
 
@@ -104,336 +112,122 @@ all_exprds <- sapply(all_hicds, function(x) list.files(file.path(mainPipFold, x)
 stopifnot(length(all_sampleCorr_files) == length(unlist(all_exprds)))
 
 
+### RETRIEVE ALL THE FILES IN THE FOLDER !!!
+mainPipFold <- dirname(dirname(pipOutFold))
+txt <- paste0("!!! take all the files matching \"meanCorr_sample_around_TADs_sameNbr.Rdata\" in ", mainPipFold, "\n")
+printAndLog(txt, pipLogFile)
+
+all_sampleCorr_files <- list.files(mainPipFold, pattern="meanCorr_sample_around_TADs_sameNbr.Rdata", full.names = TRUE, recursive = TRUE)
+all_hicds <- list.files(mainPipFold)
+all_exprds <- sapply(all_hicds, function(x) list.files(file.path(mainPipFold, x)))
 
 
-permutDT_intraCorr <- foreach(corr_file = all_sampleCorr_files, .combine='c') %dopar% {
+stopifnot(length(all_sampleCorr_files) == length(unlist(all_exprds)))
+
+
+### PREPARE THE SAMPLE CORR VALUES FROM ALL DATASETS
+corr_file="/media/electron/mnt/etemp/marie/Yuanlong_Cancer_HiC_data_TAD_DA/PIPELINE/OUTPUT_FOLDER/GSE105381_HepG2_40kb/TCGAlihc_norm_lihc/7sameNbr_runPermutationsMeanTADCorr/meanCorr_sample_around_TADs_sameNbr.Rdata"
+all_sample_corrValues <- foreach(corr_file = all_sampleCorr_files, .combine='c') %dopar% {
   stopifnot(file.exists(corr_file))
-  corr_data <- load(corr_file)
-  all_samp_corrs <-  unlist(lapply(corr_data, function(sub_data){
-    lapply(sub_data, function(x) x[[paste0(corr_type)]])
-  }))
+  corr_data <- eval(parse(text = load(corr_file)))
+  all_samp_corrs <- as.numeric(sapply(corr_data, function(x) x[[paste0(corr_type)]]))
   stopifnot(!is.null(all_samp_corrs))
   all_samp_corrs <- na.omit(all_samp_corrs)  
   all_samp_corrs
 }
-
-
-
-
-# cut_off_seq_intraCorr <- seq(0,1,0.1)
-cut_off_seq_intraCorr <- seq(0,1,0.01)# MZ: UPDATE 16.07.2019
-
-############# ratioDown
-# obs_ratioDown_file <- file.path(curr_outFold, script8_name, "all_obs_ratioDown.Rdata")
-obs_ratioDown_file <- file.path(pipOutFold, script8_name, "all_obs_ratioDown.Rdata")
-stopifnot(file.exists(obs_ratioDown_file))
-obs_vect_ratioDown <- eval(parse(text = load(obs_ratioDown_file)))
-
-# shuff_ratioDown_file <- file.path(curr_outFold, script8_name, "ratioDown_permDT.Rdata")
-shuff_ratioDown_file <- file.path(pipOutFold, script8_name, "ratioDown_permDT.Rdata")
-stopifnot(file.exists(shuff_ratioDown_file))
-permutDT_ratioDown <- eval(parse(text = load(shuff_ratioDown_file)))
-
-# because we plot ratioConcord
-cut_off_seq_ratioDown <- seq(0,0.5,0.05)
-
-############# prodSignedRatio
-# obs_prodSignedRatio_file <- file.path(curr_outFold, script8_name, "all_obs_prodSignedRatio.Rdata")
-obs_prodSignedRatio_file <- file.path(pipOutFold, script8_name, "all_obs_prodSignedRatio.Rdata")
-stopifnot(file.exists(obs_prodSignedRatio_file))
-obs_vect_prodSignedRatio <- eval(parse(text = load(obs_prodSignedRatio_file)))
-
-# shuff_prodSignedRatio_file <- file.path(curr_outFold, script8_name, "prodSignedRatio_permDT.Rdata")
-shuff_prodSignedRatio_file <- file.path(pipOutFold, script8_name, "prodSignedRatio_permDT.Rdata")
-stopifnot(file.exists(shuff_prodSignedRatio_file))
-permutDT_prodSignedRatio <- eval(parse(text = load(shuff_prodSignedRatio_file)))
-
-cut_off_seq_prodSignedRatio <- seq(-1,1,0.2)
-
-###########################################################################################
-
-stopifnot(setequal(names(obs_vect_logFC), names(obs_vect_intraCorr)))
-stopifnot(setequal(rownames(permutDT_intraCorr), rownames(permutDT_logFC)))
-stopifnot(setequal(names(obs_vect_logFC), rownames(permutDT_logFC)))
-stopifnot(setequal(names(obs_vect_logFC), names(obs_vect_ratioDown)))
-stopifnot(setequal(names(obs_vect_logFC), names(obs_vect_prodSignedRatio)))
-stopifnot(setequal(rownames(permutDT_intraCorr), rownames(permutDT_ratioDown)))
-stopifnot(setequal(rownames(permutDT_intraCorr), rownames(permutDT_prodSignedRatio)))
-
-
-commonReg <- sort(names(obs_vect_logFC))
-
-# geneList_file <- file.path(curr_outFold, script0_name, "pipeline_geneList.Rdata")
-geneList_file <- file.path(pipOutFold, script0_name, "pipeline_geneList.Rdata")
-stopifnot(file.exists(geneList_file))
-geneList <- eval(parse(text = load(geneList_file)))
-
-g2t_DT <- gene2tad_DT[gene2tad_DT$entrezID %in% geneList,]
-stopifnot(nrow(g2t_DT) > 0)
-nbrGenes <- setNames(as.numeric(table(g2t_DT$region)), names(table(g2t_DT$region)))
-
-
-nbrGenes <- nbrGenes[commonReg]
-stopifnot(length(nbrGenes) > 0)
-
-ii <- cut(nbrGenes, breaks = seq(min(nbrGenes), max(nbrGenes), len = 100),
-          include.lowest = TRUE)
-colors <- colorRampPalette(c("blue","white", "red"))(99)[ii]
-
-
-outFile <- paste0(curr_outFold, "/", "logFC_intraTADcorr.", plotType)
-do.call(plotType, list(outFile, height=myHeight, width=myWidth))
-plot(x = abs(obs_vect_logFC[commonReg]),
-     xlab="abs observed. logFC",
-     y= obs_vect_intraCorr[commonReg],
-     pch=16, cex=0.7,
-     col=colors,
-     main="Observed logFC vs. observed intraTAD correlation"
-)
-cat(paste0("... written: ", outFile, "\n"))
-foo <- dev.off()
-
-
-permutDT_logFC <- permutDT_logFC[commonReg,]
-permutDT_intraCorr <- permutDT_intraCorr[commonReg,]
-permutDT_ratioDown <- permutDT_ratioDown[commonReg,]
-permutDT_prodSignedRatio <- permutDT_prodSignedRatio[commonReg,]
-
-stopifnot(all(dim(permutDT_logFC) == dim(permutDT_intraCorr)))
-stopifnot(all(dim(permutDT_logFC) == dim(permutDT_ratioDown)))
-stopifnot(all(dim(permutDT_logFC) == dim(permutDT_prodSignedRatio)))
-
-empFDR_list <- list()
-
-#**************************************************************************************************** EMP. FDR FROM LOG. FC
-curr_variable <- "logFC"
-
-obs_vect <- obs_vect_logFC
-permutDT <- permutDT_logFC
-
-curr_variable_plotName <- "abs(logFC)"
-
-interRegion <- intersect(names(obs_vect), rownames(permutDT))
-obs_vect <- obs_vect[interRegion]
-permutDT <- permutDT[interRegion,]
-
-if(fixCutOffSeq) {
-  cut_off_seq <- cut_off_seq_logFC
-} else{
-  cut_off_seq <- round(seq(0, max(obs_vect[-which.max(obs_vect)]), length.out = 10),1) 
-}
-# symmetric: observ_N <- sum(abs(obs_vect) >= abs(cut_off))
-empFDR_seq <- unlist(sapply(cut_off_seq, function(x) get_SAM_FDR(obs_vect, permutDT, cut_off = x, symDir = "symmetric", withPlot = F)))
-
-toKeep <- !is.infinite(empFDR_seq) & !is.na(empFDR_seq)
-slopeFDR <- as.numeric(coef(lm(empFDR_seq[toKeep] ~ cut_off_seq[toKeep]))["cut_off_seq[toKeep]"])
-
-# symmetric ! - abs. logFC 
-nbrObservedSignif <- unlist(sapply(cut_off_seq, function(x) sum(abs(obs_vect) >= abs(x))))
-
-# TRY VARIABLE CUT-OFFS: plot FDR and nbrObservSignif ~ cut_off
-outFile <- paste0(curr_outFold, "/", "FDR_var_cut_off_", curr_variable, ".", plotType)
-do.call(plotType, list(outFile, height=myHeight, width=myWidth))
-plot_FDR_with_observedSignif(yaxis_empFDR_vect= empFDR_seq,xaxis_cutoff= cut_off_seq, y2_obsSignif= nbrObservedSignif, variableName=curr_variable_plotName, feature_name="TADs")
-cat(paste0("... written: ", outFile, "\n"))
-foo <- dev.off()
-
-# PLOT ALL VALUES AND AREA PERMUT WITH FDR for the given cut-off
-k_cut_off <- 2
-outFile <- paste0(curr_outFold, "/", "FDR_", k_cut_off, "_cut_off_", curr_variable, ".", plotType)
-do.call(plotType, list(outFile, height=myHeight, width=myWidth))
-get_SAM_FDR(obs_vect, permutDT, cut_off = k_cut_off, variableName = curr_variable, symDir = "symmetric", withPlot = TRUE)
-textTAD <- names(obs_vect)[which(obs_vect >= k_cut_off | obs_vect <= -k_cut_off ) ] # symmetric !
-if(length(textTAD) > 0)
-  text(y=obs_vect[textTAD], x = which(names(obs_vect) %in% textTAD), labels = textTAD, pos=2, col="gray")
-# get_SAM_FDR(obs_vect, permutDT, cut_off = k_cut_off, variableName = curr_variable, symDir = "symmetric", withPlot = TRUE, minQuant=0, maxQuant = 1)
-cat(paste0("... written: ", outFile, "\n"))
-foo <- dev.off()
-
-empFDR_list[[paste0("empFDR_", curr_variable)]] <- setNames(empFDR_seq, paste0(cut_off_seq))
-empFDR_list[[paste0("nbrSignif_", curr_variable)]] <- setNames(nbrObservedSignif, paste0(cut_off_seq))
-empFDR_list[[paste0("slopeEmpFDR_", curr_variable)]] <- slopeFDR
-
-rm(obs_vect)
-rm(permutDT)
-
-#**************************************************************************************************** EMP. FDR FROM INTRA TAD CORRELATION
-
-curr_variable <- "intraTADcorr"
-obs_vect <- obs_vect_intraCorr
-permutDT <- permutDT_intraCorr
-curr_variable_plotName <- curr_variable
-
-interRegion <- intersect(names(obs_vect), rownames(permutDT))
-stopifnot(setequal(interRegion, commonReg))
-obs_vect <- obs_vect[interRegion]
-permutDT <- permutDT[interRegion,]
-# cut_off_seq <- round(seq(0, max(obs_vect[-which.max(obs_vect)]), length.out = 10),2)
-# cut_off_seq <- seq(0, 0.5, by =0.05)
-if(fixCutOffSeq) {
-  cut_off_seq <- cut_off_seq_intraCorr
-} else{
-  cut_off_seq <- round(seq(0, max(obs_vect[-which.max(obs_vect)]), length.out = 10),2)
-}
-# higher: sum(obs_vect >= cut_off)
-empFDR_seq <- unlist(sapply(cut_off_seq, function(x) get_SAM_FDR(obs_vect, permutDT, cut_off = x, symDir = "higher", withPlot = F)))
-
-toKeep <- !is.infinite(empFDR_seq) & !is.na(empFDR_seq)
-slopeFDR <- as.numeric(coef(lm(empFDR_seq[toKeep] ~ cut_off_seq[toKeep]))["cut_off_seq[toKeep]"])
-
-# ! higher
-nbrObservedSignif <- unlist(sapply(cut_off_seq, function(x) sum(obs_vect >= x)))
-
-# TRY VARIABLE CUT-OFFS: plot FDR and nbrObservSignif ~ cut_off
-outFile <- paste0(curr_outFold, "/", "FDR_var_cut_off_", curr_variable, ".", plotType)
-do.call(plotType, list(outFile, height=myHeight, width=myWidth))
-plot_FDR_with_observedSignif(yaxis_empFDR_vect= empFDR_seq,xaxis_cutoff= cut_off_seq, y2_obsSignif= nbrObservedSignif, variableName=curr_variable_plotName, feature_name="TADs")
-cat(paste0("... written: ", outFile, "\n"))
-foo <- dev.off()
-
-# PLOT ALL VALUES AND AREA PERMUT WITH FDR for the given cut-off
-k_cut_off <- 0.2
-outFile <- paste0(curr_outFold, "/", "FDR_", k_cut_off, "_cut_off_", curr_variable, ".", plotType)
-do.call(plotType, list(outFile, height=myHeight, width=myWidth))
-get_SAM_FDR(obs_vect, permutDT, cut_off = k_cut_off, variableName = curr_variable, symDir = "higher", withPlot = TRUE)
-# get_SAM_FDR(obs_vect, permutDT, cut_off = k_cut_off, variableName = curr_variable, symDir = "higher", withPlot = TRUE, minQuant=0, maxQuant = 1)
-textTAD <- names(obs_vect)[which(obs_vect >= k_cut_off  ) ] # higher !
-if(length(textTAD) > 0)
-  text(y=obs_vect[textTAD], x = which(names(obs_vect) %in% textTAD), labels = textTAD, pos=2, col="gray")
-
-cat(paste0("... written: ", outFile, "\n"))
-foo <- dev.off()
-
-empFDR_list[[paste0("empFDR_", curr_variable)]] <- setNames(empFDR_seq, paste0(cut_off_seq))
-empFDR_list[[paste0("nbrSignif_", curr_variable)]] <- setNames(nbrObservedSignif, paste0(cut_off_seq))
-empFDR_list[[paste0("slopeEmpFDR_", curr_variable)]] <- slopeFDR
-
-rm(obs_vect)
-rm(permutDT)
-
-#****************************************************************************************************************************************************** EMP FDR RATIO DOWN
-curr_variable <- "ratioDown"
-
-obs_vect <- obs_vect_ratioDown
-permutDT <- permutDT_ratioDown
-
-curr_variable_plotName <- "abs(ratioDown-0.5)"
-
-# to have sth symmetric around 0 (for the get_SAM_FDR):
-obs_vect <- obs_vect - 0.5
-permutDT <- permutDT - 0.5
-
-interRegion <- intersect(names(obs_vect), rownames(permutDT))
-stopifnot(setequal(interRegion, commonReg))
-obs_vect <- obs_vect[interRegion]
-permutDT <- permutDT[interRegion,]
-
-# obs_vect[which.max(obs_vect)]
-if(fixCutOffSeq) {
-  cut_off_seq <- cut_off_seq_ratioDown
-} else{
-  cut_off_seq <- round(seq(0, max(obs_vect[-which.max(obs_vect)]), length.out = 10),1)
-}
-# symmetric: observ_N <- sum(abs(obs_vect) >= abs(cut_off))
-empFDR_seq <- unlist(sapply(cut_off_seq, function(x) get_SAM_FDR(obs_vect, permutDT, cut_off = x, symDir = "symmetric", withPlot = F)))
-
-toKeep <- !is.infinite(empFDR_seq) & !is.na(empFDR_seq)
-slopeFDR <- as.numeric(coef(lm(empFDR_seq[toKeep] ~ cut_off_seq[toKeep]))["cut_off_seq[toKeep]"])
-
-# symmetric !
-nbrObservedSignif <- unlist(sapply(cut_off_seq, function(x) sum(abs(obs_vect) >= abs(x))))
-
-# TRY VARIABLE CUT-OFFS: plot FDR and nbrObservSignif ~ cut_off
-outFile <- paste0(curr_outFold, "/", "FDR_var_cut_off_", curr_variable, ".", plotType)
-do.call(plotType, list(outFile, height=myHeight, width=myWidth))
-plot_FDR_with_observedSignif(yaxis_empFDR_vect= empFDR_seq,xaxis_cutoff= cut_off_seq, y2_obsSignif= nbrObservedSignif, variableName=curr_variable_plotName, feature_name="TADs")
-cat(paste0("... written: ", outFile, "\n"))
-foo <- dev.off()
-
-# PLOT ALL VALUES AND AREA PERMUT WITH FDR for the given cut-off
-k_cut_off <- 0.3
-outFile <- paste0(curr_outFold, "/", "FDR_", k_cut_off, "_cut_off_", curr_variable, ".", plotType)
-do.call(plotType, list(outFile, height=myHeight, width=myWidth))
-get_SAM_FDR(obs_vect, permutDT, cut_off = k_cut_off, symDir = "symmetric",  variableName = curr_variable, withPlot = TRUE, plotOffsetY = 0.05)
-textTAD <- names(obs_vect)[which(obs_vect >= k_cut_off  | obs_vect <= -k_cut_off ) ] # symmetric !
-if(length(textTAD) > 0)
-  text(y=obs_vect[textTAD], x = which(names(obs_vect) %in% textTAD), labels = textTAD, pos=2, col="gray")
-
-cat(paste0("... written: ", outFile, "\n"))
-foo <- dev.off()
-
-empFDR_list[[paste0("empFDR_", curr_variable)]] <- setNames(empFDR_seq, paste0(cut_off_seq))
-empFDR_list[[paste0("nbrSignif_", curr_variable)]] <- setNames(nbrObservedSignif, paste0(cut_off_seq))
-empFDR_list[[paste0("slopeEmpFDR_", curr_variable)]] <- slopeFDR
-
-
-rm(obs_vect)
-rm(permutDT)
-
-#****************************************************************************************************************************************************** EMP FDR prodsignedratio
-curr_variable <- "prodSignedRatio"
-
-obs_vect <- obs_vect_prodSignedRatio
-permutDT <- permutDT_prodSignedRatio
-
-curr_variable_plotName <- curr_variable
-
-interRegion <- intersect(names(obs_vect), rownames(permutDT))
-stopifnot(setequal(interRegion, commonReg))
-obs_vect <- obs_vect[interRegion]
-permutDT <- permutDT[interRegion,]
-
-# obs_vect[which.max(obs_vect)]
-if(fixCutOffSeq) {
-  cut_off_seq <- cut_off_seq_prodSignedRatio
-} else{
-  cut_off_seq <- round(seq(0, max(obs_vect[-which.max(obs_vect)]), length.out = 10),1)
-}
-# higher: sum(obs_vect >= cut_off)
-empFDR_seq <- unlist(sapply(cut_off_seq, function(x) get_SAM_FDR(obs_vect, permutDT, cut_off = x, symDir = "higher", withPlot = F)))
-
-toKeep <- !is.infinite(empFDR_seq) & !is.na(empFDR_seq)
-slopeFDR <- as.numeric(coef(lm(empFDR_seq[toKeep] ~ cut_off_seq[toKeep]))["cut_off_seq[toKeep]"])
-
-# ! higher
-nbrObservedSignif <- unlist(sapply(cut_off_seq, function(x) sum(obs_vect >= x)))
-
-# TRY VARIABLE CUT-OFFS: plot FDR and nbrObservSignif ~ cut_off
-outFile <- paste0(curr_outFold, "/", "FDR_var_cut_off_", curr_variable, ".", plotType)
-do.call(plotType, list(outFile, height=myHeight, width=myWidth))
-plot_FDR_with_observedSignif(yaxis_empFDR_vect= empFDR_seq,xaxis_cutoff= cut_off_seq, y2_obsSignif= nbrObservedSignif, variableName=curr_variable_plotName, feature_name="TADs")
-cat(paste0("... written: ", outFile, "\n"))
-foo <- dev.off()
-
-# PLOT ALL VALUES AND AREA PERMUT WITH FDR for the given cut-off
-k_cut_off <- 0.5
-outFile <- paste0(curr_outFold, "/", "FDR_", k_cut_off, "_cut_off_", curr_variable, ".", plotType)
-do.call(plotType, list(outFile, height=myHeight, width=myWidth))
-get_SAM_FDR(obs_vect, permutDT, cut_off = k_cut_off, symDir = "higher",  variableName = curr_variable, withPlot = TRUE, plotOffsetY = 0.05)
-textTAD <- names(obs_vect)[which(obs_vect >= k_cut_off  ) ] # higher !
-if(length(textTAD) > 0)
-  text(y=obs_vect[textTAD], x = which(names(obs_vect) %in% textTAD), labels = textTAD, pos=2, col="gray")
-cat(paste0("... written: ", outFile, "\n"))
-foo <- dev.off()
-
-empFDR_list[[paste0("empFDR_", curr_variable)]] <- setNames(empFDR_seq, paste0(cut_off_seq))
-empFDR_list[[paste0("nbrSignif_", curr_variable)]] <- setNames(nbrObservedSignif, paste0(cut_off_seq))
-empFDR_list[[paste0("slopeEmpFDR_", curr_variable)]] <- slopeFDR
-
-
-rm(obs_vect)
-rm(permutDT)
-##############################
-outFile <- file.path(curr_outFold, "empFDR_list.Rdata")
-save(empFDR_list, file = outFile)
+nbr_permut <- length(all_sampleCorr_files) # each dataset corresponds to 1 permut
+
+
+
+# RETRIEVE THE OBSERVED CORR DATA
+obs_corr_file <- file.path(pipOutFold, script4_name, "all_meanCorr_TAD.Rdata")
+stopifnot(file.exists(obs_corr_file))
+
+
+
+
+obs_corr_values <- eval(parse(text = load(obs_corr_file)))
+
+
+    
+
+    
+    
+        
+  cat("...... ", "get_SAM_FDR_aroundTADs", "\n")
+  # higher: sum(obs_vect >= cut_off)
+  empFDR_seq <- sapply(cut_off_seq_intraCorr, function(x) 
+    get_SAM_FDR_aroundTADs(obs_vect = obs_corr_values, 
+                           permut_values = sampling_values, 
+                           cut_off = x, symDir = "higher", 
+                           nPermut = nbrPermut,
+                           withPlot = F))
+  names(empFDR_seq) <- as.character(cut_off_seq_intraCorr)
+  
+  curr_variable <- sampling_vals_type #"meanTADCorr"
+  curr_variable_plotName <- curr_variable
+  
+  # toKeep <- !is.infinite(empFDR_seq) & !is.na(empFDR_seq)
+  # slopeFDR <- as.numeric(coef(lm(empFDR_seq[toKeep] ~ cut_off_seq_intraCorr[toKeep]))["cut_off_seq_intraCorr[toKeep]"])
+  
+  # ! higher
+  nbrObservedSignif <- sapply(cut_off_seq_intraCorr, function(x) sum(obs_corr_values >= x))
+  names(nbrObservedSignif) <- cut_off_seq_intraCorr
+  
+  # TRY VARIABLE CUT-OFFS: plot FDR and nbrObservSignif ~ cut_off
+  cat("...... ", "plot_FDR_with_observedSignif", "\n")
+  outFile <- file.path(currOutFold, paste0("FDR_var_cut_off_", curr_variable, "_", samp_type, ".", plotType))
+  dir.create(dirname(outFile), recursive = T)
+  do.call(plotType, list(outFile, height=myHeight, width=myWidth))
+  plot_FDR_with_observedSignif(yaxis_empFDR_vect= empFDR_seq,
+                               xaxis_cutoff= cut_off_seq_intraCorr, 
+                               y2_obsSignif= nbrObservedSignif, 
+                               variableName=curr_variable_plotName, 
+                               feature_name="TADs")
+  cat(paste0("... written: ", outFile, "\n"))
+  foo <- dev.off()
+  
+  # PLOT ALL VALUES AND AREA PERMUT WITH FDR for the given cut-off
+  cat("...... ", "get_SAM_FDR_aroundTADs", "\n")
+  outFile <- file.path(currOutFold, paste0("FDR_", k_cut_off, "_cut_off_", curr_variable, "_", samp_type, ".", plotType))
+  dir.create(dirname(outFile), recursive = T)
+  do.call(plotType, list(outFile, height=myHeight, width=myWidth))
+  get_SAM_FDR_aroundTADs(obs_vect = obs_corr_values, 
+                         permut_values = sampling_values, 
+                         cut_off = k_cut_off, 
+                         variableName = curr_variable, 
+                         symDir = "higher", 
+                         withPlot = TRUE,
+                         sortToPlot = sort_plotQuantileCutOff)
+  # get_SAM_FDR(obs_vect, permutDT, cut_off = k_cut_off, variableName = curr_variable, symDir = "higher", withPlot = TRUE, minQuant=0, maxQuant = 1)
+  textTAD <- names(obs_corr_values)[which(obs_corr_values >= k_cut_off  ) ] # higher !
+  if(length(textTAD) > 0)
+    text(y=obs_corr_values[textTAD], x = which(names(obs_corr_values) %in% textTAD), labels = textTAD, pos=2, col="gray")
+  
+  cat(paste0("... written: ", outFile, "\n"))
+  foo <- dev.off()
+  
+meanCorr_empFDR <- list(
+    empFDR = empFDR_seq,
+    nbrSignif = nbrObservedSignif
+  )
+  
+
+
+
+outFile <- file.path(curr_outFold, "emp_pval_meanCorr.Rdata")
+save(emp_pval_meanCorr, file= outFile)
 cat(paste0("... written: ", outFile, "\n"))
 
-tmp <- unlist(empFDR_list[grep("empFDR", names(empFDR_list))])
-tmp <- tmp[!is.na(tmp) & !is.infinite(tmp)]
-if(any(tmp > 1)) {
-  warning("!!! emp. FDR > 1 found !!!\n")
-}
+#############################################################################################################################
+#############################################################################################################################
+#############################################################################################################################
 
-##############################
-cat("***** DONE\n")
-cat(paste0(startTime, "\n", Sys.time(), "\n"))
+
+txt <- paste0(startTime, "\n", Sys.time(), "\n")
+printAndLog(txt, pipLogFile)
+cat(paste0("*** DONE: ", script_name, "\n"))
+
+
+
+
