@@ -124,4 +124,26 @@ get_SAM_FDR_aroundTADs <- function(obs_vect, permut_values, cut_off, symDir, nPe
 }
 
 
+#############################################################################################################################
+#############################################################################################################################
+#############################################################################################################################
+
+plot_FDR_with_observedSignif <- function(yaxis_empFDR_vect, xaxis_cutoff, y2_obsSignif, variableName,  feature_name = "genes", rightAxisCol = "steelblue") {
+  initmar <- par()$mar
+  par(mar = c(5,5,2,5))
+  plot((100*yaxis_empFDR_vect) ~ xaxis_cutoff, type="o", pch=16, 
+       main=paste0("Empirical FDR with variable cut-off of ", variableName),
+       xlab=paste0(variableName, " cut-off"),
+       ylab="% FDR", axes=F)
+  axis(1, at=xaxis_cutoff, labels = xaxis_cutoff)
+  axis(2)
+  par(new = T)
+  plot(log10(y2_obsSignif) ~ xaxis_cutoff, type="o", 
+       col=rightAxisCol, pch=16, ylim=c(0, max(log10(y2_obsSignif))),
+       axes=F, xlab=NA, ylab=NA, bty="l")
+  box(bty="u")
+  axis(side = 4, col=rightAxisCol)
+  mtext(side = 4, line = 3, paste0('Observed # of significant ', feature_name, ' (log10)'), col = rightAxisCol)
+  on.exit(par(initmar))
+}
 

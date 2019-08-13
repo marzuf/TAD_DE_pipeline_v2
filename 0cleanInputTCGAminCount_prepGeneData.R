@@ -1,8 +1,14 @@
 #!/usr/bin/Rscript
 
-stop("... why not using OcleanInputTCGAminCount ???\n")
+stop("*** DONT FORGET TO TEST THIS NEW VERSION BEFORE RUNNING THE FULL PIPELINE !!!")
 
-cat(paste0("> START ", "OcleanInputTCGA",  "\n"))
+### -> UPDATE 13.08.2019
+# => retain the genes for which <min_sampleRatio*100>% of the samples have at least <min_counts> counts 
+# => default settings: min_sampleRatio = 0.8 and min_counts = 5
+# (cf. plot ratio genes ~ ratio samples in 2_Yuanlong_Cancer_HiC_data_TAD_DA/)
+# (settings in run_pipeline.sh -> written in the setting file)
+
+cat(paste0("> START ", "OcleanInputTCGAminCPM",  "\n"))
 
 startTime <- Sys.time()
 
@@ -76,6 +82,14 @@ if(inRdata) {
 refGenes <- as.character(rownames(rnaseqDT))
 cat(paste0("... initial number of rows (genes): ", length(refGenes), "\n"))
 
+# ADDED 13.08.2019 to change the way counts are filtered
+# set in run_pipeline.sh -> written in the setting file #min_sampleRatio <- 0.8 #min_counts <- 5
+stopifnot(exists(min_sampleRatio))
+stopifnot(exists(min_counts))
+stopifnot(is.numeric(min_counts))
+stopifnot(is.numeric(min_sampleRatio))
+stopifnot(min_sampleRatio >= 0 & min_sampleRatio <= 1)
+
 # ADDED 16.11.2018 to check using other files
 txt <- paste0("gene2tadDT_file\t=\t", gene2tadDT_file, "\n")
 printAndLog(txt, pipLogFile)
@@ -83,7 +97,10 @@ txt <- paste0("TADpos_file\t=\t", TADpos_file, "\n")
 printAndLog(txt, pipLogFile)
 txt <- paste0("settingF\t=\t", settingF, "\n")
 printAndLog(txt, pipLogFile)
-
+txt <- paste0("min_sampleRatio\t=\t", min_sampleRatio, "\n")
+printAndLog(txt, pipLogFile)
+txt <- paste0("min_counts\t=\t", min_counts, "\n")
+printAndLog(txt, pipLogFile)
 ### NA ARE NOT ALLOWED WHEN COMPUTING CPM, CHECK THE RNASEQDT DO NOT CONTAIN NA
 txt <- paste0(toupper(script_name), "> replace NA with 0 before computing cpm: ", 
               sum(is.na(rnaseqDT)), "/", dim(rnaseqDT)[1]*dim(rnaseqDT)[2], " (",
@@ -181,6 +198,10 @@ stopifnot(length(pipeline_geneList) > 0)
 # FILTER 2: FILTER GENES THAT PASS MIN CPM THRESHOLD
 # (only if useFilterCountData == TRUE)
 ########################################################################################
+
+### !!! changed here 13.08.2019
+#keep genes for which at least min_sampleRatio of the samples have >= min_counts
+
 if(useFilterCountData) {
   stopifnot(is.numeric(rna_rnaseqDT[1,1]))
   # take only the genes for which I have position (filter 1)
@@ -190,30 +211,55 @@ if(useFilterCountData) {
   stopifnot(all(samp1 %in% colnames(countFilter_rnaseqDT)))
   stopifnot(all(samp2 %in% colnames(countFilter_rnaseqDT)))
   countFilter_rnaseqDT <- countFilter_rnaseqDT[,c(samp1, samp2)]
+
+  totSamples <- length(samp1) + length(samp2)
+  stopifnot(ncol(countFilter_rnaseqDT) == totSamples)
   
   if(inputDataType == "raw" | inputDataType == "RSEM") {
-    # FILTER THE EXPRESSION DATA TO MIN CPM FILTER
-    cpm_exprDT <- cpm(countFilter_rnaseqDT)
-    txt <- paste0(toupper(script_name), "> NA in cpm_exprDT: ", 
-                  sum(is.na(cpm_exprDT)), "/", dim(cpm_exprDT)[1]*dim(cpm_exprDT)[2], " (",
-                  round((sum(is.na(cpm_exprDT))/(dim(cpm_exprDT)[1]*dim(cpm_exprDT)[2]) * 100),2), "%)\n")
+
+    # CHANGE: at least min_counts reads in at least min_sampleRatio of samples
+    # for each gene, how many samples have enough read (number)
+    genes_nSamples_atLeastMinReads <- apply(countFilter_rnaseqDT, 1, function(x) sum(x >= min_counts)) 
+    stopifnot(names(genes_nSamples_atLeastMinReads) == rownames(countFilter_rnaseqDT))
+    # convert # of samples to ratio of samples
+    genes_ratioSamples_atLeastMinReads <- genes_nSamples_atLeastMinReads/totSamples
+    stopifnot(genes_ratioSamples_atLeastMinReads >= 0)
+    stopifnot(genes_ratioSamples_atLeastMinReads <= 1)
+    stopifnot(length(genes_ratioSamples_atLeastMinReads) == nrow(countFilter_rnaseqDT))
+    # which genes have a ratio of samples with at least min counts above the min. ratio of samples
+    rowsToKeep <- genes_ratioSamples_atLeastMinReads >= min_sampleRatio
+    stopifnot(length(rowsToKeep) == nrow(countFilter_rnaseqDT))
+
+
+    stopifnot(names(pipeline_geneList) == rownames(countFilter_rnaseqDT))
+    keptRatio <- sum(rowsToKeep)/length(pipeline_geneList)
+    txt <- paste0(toupper(script_name), "> useFilterCountData is TRUE -> minCount-filtered geneList; to keep: ", sum(rowsToKeep), "/", length(pipeline_geneList), "(", round(keptRatio%100,2), "%)\n")
     printAndLog(txt, pipLogFile)
-    rowsToKeep <- rowSums(cpm_exprDT, na.rm = T) >= (minCpmRatio * ncol(countFilter_rnaseqDT))
-    txt <- paste0(toupper(script_name), "> useFilterCountData is TRUE -> CPM-filtered geneList; to keep: ", sum(rowsToKeep), "/", length(pipeline_geneList), "\n")
-    printAndLog(txt, pipLogFile)
+
+                                                                # not used in the 13.08.2019 version
+                                                                #    cpm_exprDT <- cpm(countFilter_rnaseqDT)
+                                                                #    txt <- paste0(toupper(script_name), "> NA in cpm_exprDT: ", 
+                                                                #                  sum(is.na(cpm_exprDT)), "/", dim(cpm_exprDT)[1]*dim(cpm_exprDT)[2], " (",
+                                                                #                  round((sum(is.na(cpm_exprDT))/(dim(cpm_exprDT)[1]*dim(cpm_exprDT)[2]) * 100),2), "%)\n")
+                                                                #    printAndLog(txt, pipLogFile)
+                                                                #    rowsToKeep <- rowSums(cpm_exprDT, na.rm = T) >= (minCpmRatio * ncol(countFilter_rnaseqDT))
+                                                                #    txt <- paste0(toupper(script_name), "> useFilterCountData is TRUE -> CPM-filtered geneList; to keep: ", sum(rowsToKeep), "/", length(pipeline_geneList), "\n")
+                                                                #    printAndLog(txt, pipLogFile)
 
   
   } else if(inputDataType == "FPKM") {
+    stop("!!! unimplemented in the 13.08.2019 version\n")
     txt <- paste0(toupper(script_name), "> !!! FPKM filter applied !!!", "\n")
     printAndLog(txt, pipLogFile)
     cpm_exprDT <- countFilter_rnaseqDT
-    txt <- paste0(toupper(script_name), "> NA in cpm_exprDT: ", 
-                  sum(is.na(cpm_exprDT)), "/", dim(cpm_exprDT)[1]*dim(cpm_exprDT)[2], " (",
-                  round((sum(is.na(cpm_exprDT))/(dim(cpm_exprDT)[1]*dim(cpm_exprDT)[2]) * 100),2), "%)\n")
-    printAndLog(txt, pipLogFile)
-    rowsToKeep <- rowSums(cpm_exprDT, na.rm=T) >= (minCpmRatio * ncol(countFilter_rnaseqDT))
-    
+# not used in the 13.08.2019 version    
+#    txt <- paste0(toupper(script_name), "> NA in cpm_exprDT: ", 
+#                  sum(is.na(cpm_exprDT)), "/", dim(cpm_exprDT)[1]*dim(cpm_exprDT)[2], " (",
+#                  round((sum(is.na(cpm_exprDT))/(dim(cpm_exprDT)[1]*dim(cpm_exprDT)[2]) * 100),2), "%)\n")
+#    printAndLog(txt, pipLogFile)
+#    rowsToKeep <- rowSums(cpm_exprDT, na.rm=T) >= (minCpmRatio * ncol(countFilter_rnaseqDT))   
   } else if(inputDataType == "microarray" | inputDataType == "DESeq2") {
+    stop("!!! unimplemented in the 13.08.2019 version\n")
     # CANNOT APPLY CPM FILTER  !
     txt <- paste0(toupper(script_name), "> !!! CPM filter not applied !!!", "\n")
     printAndLog(txt, pipLogFile)

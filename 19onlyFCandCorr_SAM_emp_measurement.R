@@ -1,5 +1,7 @@
 #!/usr/bin/Rscript
 
+# -> 13.08.19: FC and Corr but no prodSignedRatio
+
 options(scipen=100)
 
 startTime <- Sys.time()
@@ -36,9 +38,9 @@ script4_name <- "4_runMeanTADCorr"
 script6_name <- "6_runPermutationsMeanLogFC"
 script7_name <- "7_runPermutationsMeanTADCorr"
 script8_name <- "8c_runAllDown"
+script8_name <- "8cOnlyRatioDown_runAllDown" # UPDATED 12.08.2019 for the 100'000 permut
 
-
-script_name <- "19_SAM_emp_measurement"
+script_name <- "19onlyFCandCorr_SAM_emp_measurement"
 stopifnot(file.exists(paste0(pipScriptDir, "/", script_name, ".R")))
 cat(paste0("> START ", script_name,  "\n"))
 
@@ -85,6 +87,10 @@ shuff_logFC_file <- file.path(pipOutFold, script6_name, "meanLogFC_permDT.Rdata"
 stopifnot(file.exists(shuff_logFC_file))
 permutDT_logFC <- eval(parse(text = load(shuff_logFC_file)))
 
+cat("dim(permutDT_logFC):\n")
+cat(dim(permutDT_logFC))
+cat("\n")
+
 # because this is absolute logFC
 cut_off_seq_logFC <- seq(0,5,0.5)
 cut_off_seq_logFC <- seq(0,5,0.05) # MZ: UPDATE 16.07.2019
@@ -103,6 +109,10 @@ permutDT_intraCorr <- eval(parse(text = load(shuff_intraCorr_file)))
 cut_off_seq_intraCorr <- seq(0,1,0.1)
 cut_off_seq_intraCorr <- seq(0,1,0.01)# MZ: UPDATE 16.07.2019
 
+cat("dim(permutDT_intraCorr):\n")
+cat(dim(permutDT_intraCorr))
+cat("\n")
+
 ############# ratioDown
 # obs_ratioDown_file <- file.path(curr_outFold, script8_name, "all_obs_ratioDown.Rdata")
 obs_ratioDown_file <- file.path(pipOutFold, script8_name, "all_obs_ratioDown.Rdata")
@@ -114,21 +124,15 @@ shuff_ratioDown_file <- file.path(pipOutFold, script8_name, "ratioDown_permDT.Rd
 stopifnot(file.exists(shuff_ratioDown_file))
 permutDT_ratioDown <- eval(parse(text = load(shuff_ratioDown_file)))
 
+cat("dim(permutDT_ratioDown):\n")
+cat(dim(permutDT_ratioDown))
+cat("\n")
+
 # because we plot ratioConcord
 cut_off_seq_ratioDown <- seq(0,0.5,0.05)
 
-############# prodSignedRatio
-# obs_prodSignedRatio_file <- file.path(curr_outFold, script8_name, "all_obs_prodSignedRatio.Rdata")
-obs_prodSignedRatio_file <- file.path(pipOutFold, script8_name, "all_obs_prodSignedRatio.Rdata")
-stopifnot(file.exists(obs_prodSignedRatio_file))
-obs_vect_prodSignedRatio <- eval(parse(text = load(obs_prodSignedRatio_file)))
 
-# shuff_prodSignedRatio_file <- file.path(curr_outFold, script8_name, "prodSignedRatio_permDT.Rdata")
-shuff_prodSignedRatio_file <- file.path(pipOutFold, script8_name, "prodSignedRatio_permDT.Rdata")
-stopifnot(file.exists(shuff_prodSignedRatio_file))
-permutDT_prodSignedRatio <- eval(parse(text = load(shuff_prodSignedRatio_file)))
 
-cut_off_seq_prodSignedRatio <- seq(-1,1,0.2)
 
 ###########################################################################################
 
@@ -136,9 +140,9 @@ stopifnot(setequal(names(obs_vect_logFC), names(obs_vect_intraCorr)))
 stopifnot(setequal(rownames(permutDT_intraCorr), rownames(permutDT_logFC)))
 stopifnot(setequal(names(obs_vect_logFC), rownames(permutDT_logFC)))
 stopifnot(setequal(names(obs_vect_logFC), names(obs_vect_ratioDown)))
-stopifnot(setequal(names(obs_vect_logFC), names(obs_vect_prodSignedRatio)))
+
 stopifnot(setequal(rownames(permutDT_intraCorr), rownames(permutDT_ratioDown)))
-stopifnot(setequal(rownames(permutDT_intraCorr), rownames(permutDT_prodSignedRatio)))
+
 
 
 commonReg <- sort(names(obs_vect_logFC))
@@ -177,11 +181,11 @@ foo <- dev.off()
 permutDT_logFC <- permutDT_logFC[commonReg,]
 permutDT_intraCorr <- permutDT_intraCorr[commonReg,]
 permutDT_ratioDown <- permutDT_ratioDown[commonReg,]
-permutDT_prodSignedRatio <- permutDT_prodSignedRatio[commonReg,]
+
 
 stopifnot(all(dim(permutDT_logFC) == dim(permutDT_intraCorr)))
 stopifnot(all(dim(permutDT_logFC) == dim(permutDT_ratioDown)))
-stopifnot(all(dim(permutDT_logFC) == dim(permutDT_prodSignedRatio)))
+
 
 empFDR_list <- list()
 
@@ -350,59 +354,6 @@ empFDR_list[[paste0("slopeEmpFDR_", curr_variable)]] <- slopeFDR
 rm(obs_vect)
 rm(permutDT)
 
-#****************************************************************************************************************************************************** EMP FDR prodsignedratio
-curr_variable <- "prodSignedRatio"
-
-obs_vect <- obs_vect_prodSignedRatio
-permutDT <- permutDT_prodSignedRatio
-
-curr_variable_plotName <- curr_variable
-
-interRegion <- intersect(names(obs_vect), rownames(permutDT))
-stopifnot(setequal(interRegion, commonReg))
-obs_vect <- obs_vect[interRegion]
-permutDT <- permutDT[interRegion,]
-
-# obs_vect[which.max(obs_vect)]
-if(fixCutOffSeq) {
-  cut_off_seq <- cut_off_seq_prodSignedRatio
-} else{
-  cut_off_seq <- round(seq(0, max(obs_vect[-which.max(obs_vect)]), length.out = 10),1)
-}
-# higher: sum(obs_vect >= cut_off)
-empFDR_seq <- unlist(sapply(cut_off_seq, function(x) get_SAM_FDR(obs_vect, permutDT, cut_off = x, symDir = "higher", withPlot = F)))
-
-toKeep <- !is.infinite(empFDR_seq) & !is.na(empFDR_seq)
-slopeFDR <- as.numeric(coef(lm(empFDR_seq[toKeep] ~ cut_off_seq[toKeep]))["cut_off_seq[toKeep]"])
-
-# ! higher
-nbrObservedSignif <- unlist(sapply(cut_off_seq, function(x) sum(obs_vect >= x)))
-
-# TRY VARIABLE CUT-OFFS: plot FDR and nbrObservSignif ~ cut_off
-outFile <- paste0(curr_outFold, "/", "FDR_var_cut_off_", curr_variable, ".", plotType)
-do.call(plotType, list(outFile, height=myHeight, width=myWidth))
-plot_FDR_with_observedSignif(yaxis_empFDR_vect= empFDR_seq,xaxis_cutoff= cut_off_seq, y2_obsSignif= nbrObservedSignif, variableName=curr_variable_plotName, feature_name="TADs")
-cat(paste0("... written: ", outFile, "\n"))
-foo <- dev.off()
-
-# PLOT ALL VALUES AND AREA PERMUT WITH FDR for the given cut-off
-k_cut_off <- 0.5
-outFile <- paste0(curr_outFold, "/", "FDR_", k_cut_off, "_cut_off_", curr_variable, ".", plotType)
-do.call(plotType, list(outFile, height=myHeight, width=myWidth))
-get_SAM_FDR(obs_vect, permutDT, cut_off = k_cut_off, symDir = "higher",  variableName = curr_variable, withPlot = TRUE, plotOffsetY = 0.05)
-textTAD <- names(obs_vect)[which(obs_vect >= k_cut_off  ) ] # higher !
-if(length(textTAD) > 0)
-  text(y=obs_vect[textTAD], x = which(names(obs_vect) %in% textTAD), labels = textTAD, pos=2, col="gray")
-cat(paste0("... written: ", outFile, "\n"))
-foo <- dev.off()
-
-empFDR_list[[paste0("empFDR_", curr_variable)]] <- setNames(empFDR_seq, paste0(cut_off_seq))
-empFDR_list[[paste0("nbrSignif_", curr_variable)]] <- setNames(nbrObservedSignif, paste0(cut_off_seq))
-empFDR_list[[paste0("slopeEmpFDR_", curr_variable)]] <- slopeFDR
-
-
-rm(obs_vect)
-rm(permutDT)
 ##############################
 outFile <- paste0(curr_outFold, "/", "empFDR_list.Rdata")
 save(empFDR_list, file = outFile)

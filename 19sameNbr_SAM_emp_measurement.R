@@ -4,7 +4,8 @@ options(scipen=100)
 
 startTime <- Sys.time()
 
-suppressPackageStartupMessages(library(data.table, warn.conflicts = FALSE, quietly = TRUE, verbose = FALSE))
+suppressPackageStartupMessages(library(foreach, warn.conflicts = FALSE, quietly = TRUE, verbose = FALSE))
+suppressPackageStartupMessages(library(doMC, warn.conflicts = FALSE, quietly = TRUE, verbose = FALSE))
 
 
 # for each permutation, compute how many solutions greater than k
@@ -26,9 +27,9 @@ stopifnot(file.exists(settingF))
 script0_name <- "0_prepGeneData"
 script3_name <- "3_runMeanTADLogFC"
 script4_name <- "4_runMeanTADCorr"
-script6_name <- "6_runPermutationsMeanLogFC"
+script6_name <- "610000_runPermutationsMeanLogFC"
 script7sameNbr_name <- "7sameNbr_runPermutationsMeanTADCorr"
-script8_name <- "8c_runAllDown"
+
 
 script_name <- "19sameNbr_SAM_emp_measurement"
 stopifnot(file.exists(paste0(pipScriptDir, "/", script_name, ".R")))
@@ -40,10 +41,15 @@ source(settingF)
 source(paste0(pipScriptDir, "/", "TAD_DE_utils.R"))
 source(paste0(pipScriptDir, "/", "TAD_DE_utils_meanCorr.R"))
 
+registerDoMC(nCpu)
+
 
 # create the directories
 curr_outFold <- paste0(pipOutFold, "/", script_name)
 system(paste0("mkdir -p ", curr_outFold))
+
+pipLogFile <- paste0(pipOutFold, "/", format(Sys.time(), "%Y%d%m%H%M%S"),"_", script_name, "_logFile.txt")
+system(paste0("rm -f ", pipLogFile))
 
 
 plotType <- "svg"
@@ -135,7 +141,7 @@ all_sample_corrValues <- foreach(corr_file = all_sampleCorr_files, .combine='c')
   all_samp_corrs <- na.omit(all_samp_corrs)  
   all_samp_corrs
 }
-nbr_permut <- length(all_sampleCorr_files) # each dataset corresponds to 1 permut
+nbrPermut <- length(all_sampleCorr_files) # each dataset corresponds to 1 permut
 
 
 
@@ -158,14 +164,14 @@ obs_corr_values <- eval(parse(text = load(obs_corr_file)))
   # higher: sum(obs_vect >= cut_off)
   empFDR_seq <- sapply(cut_off_seq_intraCorr, function(x) 
     get_SAM_FDR_aroundTADs(obs_vect = obs_corr_values, 
-                           permut_values = sampling_values, 
+                           permut_values = all_sample_corrValues, 
                            cut_off = x, symDir = "higher", 
                            nPermut = nbrPermut,
                            withPlot = F))
   names(empFDR_seq) <- as.character(cut_off_seq_intraCorr)
   
-  curr_variable <- sampling_vals_type #"meanTADCorr"
-  curr_variable_plotName <- curr_variable
+  
+  curr_variable_plotName <- "meanTADCorr"
   
   # toKeep <- !is.infinite(empFDR_seq) & !is.na(empFDR_seq)
   # slopeFDR <- as.numeric(coef(lm(empFDR_seq[toKeep] ~ cut_off_seq_intraCorr[toKeep]))["cut_off_seq_intraCorr[toKeep]"])
@@ -176,7 +182,7 @@ obs_corr_values <- eval(parse(text = load(obs_corr_file)))
   
   # TRY VARIABLE CUT-OFFS: plot FDR and nbrObservSignif ~ cut_off
   cat("...... ", "plot_FDR_with_observedSignif", "\n")
-  outFile <- file.path(currOutFold, paste0("FDR_var_cut_off_", curr_variable, "_", samp_type, ".", plotType))
+  outFile <- file.path(curr_outFold, paste0("FDR_var_cut_off_", curr_variable_plotName, "_", "sameNbr", ".", plotType))
   dir.create(dirname(outFile), recursive = T)
   do.call(plotType, list(outFile, height=myHeight, width=myWidth))
   plot_FDR_with_observedSignif(yaxis_empFDR_vect= empFDR_seq,
@@ -189,13 +195,13 @@ obs_corr_values <- eval(parse(text = load(obs_corr_file)))
   
   # PLOT ALL VALUES AND AREA PERMUT WITH FDR for the given cut-off
   cat("...... ", "get_SAM_FDR_aroundTADs", "\n")
-  outFile <- file.path(currOutFold, paste0("FDR_", k_cut_off, "_cut_off_", curr_variable, "_", samp_type, ".", plotType))
+  outFile <- file.path(curr_outFold, paste0("FDR_", k_cut_off, "_cut_off_", curr_variable_plotName, "_", "sameNbr", ".", plotType))
   dir.create(dirname(outFile), recursive = T)
   do.call(plotType, list(outFile, height=myHeight, width=myWidth))
   get_SAM_FDR_aroundTADs(obs_vect = obs_corr_values, 
-                         permut_values = sampling_values, 
+                         permut_values = all_sample_corrValues, 
                          cut_off = k_cut_off, 
-                         variableName = curr_variable, 
+                         variableName = curr_variable_plotName, 
                          symDir = "higher", 
                          withPlot = TRUE,
                          sortToPlot = sort_plotQuantileCutOff)
@@ -215,8 +221,8 @@ meanCorr_empFDR <- list(
 
 
 
-outFile <- file.path(curr_outFold, "emp_pval_meanCorr.Rdata")
-save(emp_pval_meanCorr, file= outFile)
+outFile <- file.path(curr_outFold, "meanCorr_empFDR.Rdata")
+save(meanCorr_empFDR, file= outFile)
 cat(paste0("... written: ", outFile, "\n"))
 
 #############################################################################################################################
@@ -225,6 +231,13 @@ cat(paste0("... written: ", outFile, "\n"))
 
 
 txt <- paste0(startTime, "\n", Sys.time(), "\n")
+printAndLog(txt, pipLogFile)
+cat(paste0("*** DONE: ", script_name, "\n"))
+
+
+
+
+txt <- paste0("!!! WARNING: USE 10000 PERMUTATIONS DATA !!!\n")
 printAndLog(txt, pipLogFile)
 cat(paste0("*** DONE: ", script_name, "\n"))
 
