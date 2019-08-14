@@ -30,7 +30,9 @@ pipScriptDir <- paste0(setDir, "/mnt/ed4/marie/scripts/TAD_DE_pipeline_v2")
 script0_name <- "0_prepGeneData"
 script1_name <- "1_runGeneDE"
 script3_name <- "3_runMeanTADLogFC"
-script8_name <- "8c_runAllDown"
+#script8_name <- "8c_runAllDown"
+# 13.08.2019 update for the 100'000 permut
+script8_name <- "8cOnlyRatioDown_runAllDown"
 script9_name <- "9_runEmpPvalMeanTADLogFC"
 script10_name <- "10_runEmpPvalMeanTADCorr"
 script_name <- "11_runEmpPvalCombined"

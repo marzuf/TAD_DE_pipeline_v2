@@ -1,6 +1,6 @@
 #!/usr/bin/Rscript
 
-stop("*** DONT FORGET TO TEST THIS NEW VERSION BEFORE RUNNING THE FULL PIPELINE !!!")
+#stop("*** DONT FORGET TO TEST THIS NEW VERSION BEFORE RUNNING THE FULL PIPELINE !!!")
 
 ### -> UPDATE 13.08.2019
 # => retain the genes for which <min_sampleRatio*100>% of the samples have at least <min_counts> counts 
@@ -59,7 +59,7 @@ cat(paste0("> inputDataType: ", inputDataType, "\n"))
 #####################
 
 # create the directories
-curr_outFold <- paste0(pipOutFold, "/", script_name)
+curr_outFold <- paste0(pipOutFold, "/", script_name, "_TEMP")
 system(paste0("mkdir -p ", curr_outFold))
 
 pipLogFile <- paste0(pipOutFold, "/", format(Sys.time(), "%Y%d%m%H%M%S"),"_", script_name, "_logFile.txt")
@@ -84,8 +84,8 @@ cat(paste0("... initial number of rows (genes): ", length(refGenes), "\n"))
 
 # ADDED 13.08.2019 to change the way counts are filtered
 # set in run_pipeline.sh -> written in the setting file #min_sampleRatio <- 0.8 #min_counts <- 5
-stopifnot(exists(min_sampleRatio))
-stopifnot(exists(min_counts))
+stopifnot(exists("min_sampleRatio"))
+stopifnot(exists("min_counts"))
 stopifnot(is.numeric(min_counts))
 stopifnot(is.numeric(min_sampleRatio))
 stopifnot(min_sampleRatio >= 0 & min_sampleRatio <= 1)
@@ -233,7 +233,7 @@ if(useFilterCountData) {
 
     stopifnot(names(pipeline_geneList) == rownames(countFilter_rnaseqDT))
     keptRatio <- sum(rowsToKeep)/length(pipeline_geneList)
-    txt <- paste0(toupper(script_name), "> useFilterCountData is TRUE -> minCount-filtered geneList; to keep: ", sum(rowsToKeep), "/", length(pipeline_geneList), "(", round(keptRatio%100,2), "%)\n")
+    txt <- paste0(toupper(script_name), "> useFilterCountData is TRUE -> minCount-filtered geneList; to keep: ", sum(rowsToKeep), "/", length(pipeline_geneList), "(", round(keptRatio*100,2), "%)\n")
     printAndLog(txt, pipLogFile)
 
                                                                 # not used in the 13.08.2019 version

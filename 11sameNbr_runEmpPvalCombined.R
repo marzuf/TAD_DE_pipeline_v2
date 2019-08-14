@@ -30,10 +30,13 @@ pipScriptDir <- paste0(setDir, "/mnt/ed4/marie/scripts/TAD_DE_pipeline_v2")
 script0_name <- "0_prepGeneData"
 script1_name <- "1_runGeneDE"
 script3_name <- "3_runMeanTADLogFC"
-script8_name <- "8c10000_runAllDown"
-script9_name <- "910000_runEmpPvalMeanTADLogFC"
+#script8_name <- "8c10000_runAllDown"
+#script9_name <- "910000_runEmpPvalMeanTADLogFC"
 
-cat("!!! WARNING: USE 10000 PERMUTATIONS DATA !!!\n")
+script8_name <- "8cOnlyRatioDown_runAllDown"
+script9_name <- "9_runEmpPvalMeanTADLogFC"
+
+#cat("!!! WARNING: USE 10000 PERMUTATIONS DATA !!!\n")
 
 script10sameNbr_name <- "10sameNbr_runEmpPvalMeanTADCorr"
 script_name <- "11sameNbr_runEmpPvalCombined"
@@ -185,7 +188,7 @@ cat(paste0("... written: ", paste0(curr_outFold, "/TAD_ratioDown_logFC_empPvalCo
 txt <- paste0(startTime, "\n", Sys.time(), "\n")
 printAndLog(txt, pipLogFile)
 cat(paste0("*** DONE: ", script_name, "\n"))
-txt <- paste0("!!! WARNING: USE 10000 PERMUTATIONS DATA !!!\n")
-printAndLog(txt, pipLogFile)
-cat(paste0("*** DONE: ", script_name, "\n"))
+#txt <- paste0("!!! WARNING: USE 10000 PERMUTATIONS DATA !!!\n")
+#printAndLog(txt, pipLogFile)
+#cat(paste0("*** DONE: ", script_name, "\n"))
 

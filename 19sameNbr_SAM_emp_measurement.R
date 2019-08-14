@@ -27,7 +27,7 @@ stopifnot(file.exists(settingF))
 script0_name <- "0_prepGeneData"
 script3_name <- "3_runMeanTADLogFC"
 script4_name <- "4_runMeanTADCorr"
-script6_name <- "610000_runPermutationsMeanLogFC"
+#script6_name <- "610000_runPermutationsMeanLogFC" # => output only SAM values for the correlation using permutation sameNbr
 script7sameNbr_name <- "7sameNbr_runPermutationsMeanTADCorr"
 
 
@@ -79,19 +79,19 @@ gene2tad_DT <- read.delim(gene2tadDT_file, header=F, stringsAsFactors = F, col.n
 
 
 ############# logFC
-# obs_logFC_file <- file.path(curr_outFold, script3_name, "all_meanLogFC_TAD.Rdata")
-obs_logFC_file <- file.path(pipOutFold, script3_name, "all_meanLogFC_TAD.Rdata")
-stopifnot(file.exists(obs_logFC_file))
-obs_vect_logFC <- eval(parse(text = load(obs_logFC_file)))
+## obs_logFC_file <- file.path(curr_outFold, script3_name, "all_meanLogFC_TAD.Rdata")
+#obs_logFC_file <- file.path(pipOutFold, script3_name, "all_meanLogFC_TAD.Rdata")
+#stopifnot(file.exists(obs_logFC_file))
+#obs_vect_logFC <- eval(parse(text = load(obs_logFC_file)))
 
-# shuff_logFC_file <- file.path(curr_outFold, script6_name, "meanLogFC_permDT.Rdata")
-shuff_logFC_file <- file.path(pipOutFold, script6_name, "meanLogFC_permDT.Rdata")
-stopifnot(file.exists(shuff_logFC_file))
-permutDT_logFC <- eval(parse(text = load(shuff_logFC_file)))
+## shuff_logFC_file <- file.path(curr_outFold, script6_name, "meanLogFC_permDT.Rdata")
+#shuff_logFC_file <- file.path(pipOutFold, script6_name, "meanLogFC_permDT.Rdata")
+#stopifnot(file.exists(shuff_logFC_file))
+#permutDT_logFC <- eval(parse(text = load(shuff_logFC_file)))
 
-# because this is absolute logFC
-# cut_off_seq_logFC <- seq(0,5,0.5)
-cut_off_seq_logFC <- seq(0,5,0.05) # MZ: UPDATE 16.07.2019
+## because this is absolute logFC
+## cut_off_seq_logFC <- seq(0,5,0.5)
+#cut_off_seq_logFC <- seq(0,5,0.05) # MZ: UPDATE 16.07.2019
 
 ############# intraCorr
 # obs_intraCorr_file <- file.path(curr_outFold, script4_name, "all_meanCorr_TAD.Rdata")
@@ -231,13 +231,6 @@ cat(paste0("... written: ", outFile, "\n"))
 
 
 txt <- paste0(startTime, "\n", Sys.time(), "\n")
-printAndLog(txt, pipLogFile)
-cat(paste0("*** DONE: ", script_name, "\n"))
-
-
-
-
-txt <- paste0("!!! WARNING: USE 10000 PERMUTATIONS DATA !!!\n")
 printAndLog(txt, pipLogFile)
 cat(paste0("*** DONE: ", script_name, "\n"))
 
