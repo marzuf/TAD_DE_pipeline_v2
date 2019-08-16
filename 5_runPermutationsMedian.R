@@ -6,7 +6,7 @@ startTime <- Sys.time()
 
 #### UPDATE: do not take raw counts but fpkm data !!!
 
-#set.seed(20180202) # this row was added 08.03.18, the files in OUTPUTFOLDER so far without set.seed
+set.seed(20180202) # this row was added 08.03.18, the files in OUTPUTFOLDER so far without set.seed
 
 ################  USE THE FOLLOWING FILES FROM PREVIOUS STEPS
 # - script0: pipeline_regionList.Rdata
@@ -54,6 +54,12 @@ if(withExprClass)
 
 
 # ADDED 16.11.2018 to check using other files
+txt <- paste0("withExprClass\t=\t", withExprClass, "\n")
+printAndLog(txt, pipLogFile)
+txt <- paste0("nClass\t=\t", nClass, "\n")
+printAndLog(txt, pipLogFile)
+txt <- paste0("inputDataType\t=\t", inputDataType, "\n")
+printAndLog(txt, pipLogFile)
 txt <- paste0("gene2tadDT_file\t=\t", gene2tadDT_file, "\n")
 printAndLog(txt, pipLogFile)
 txt <- paste0("TADpos_file\t=\t", TADpos_file, "\n")

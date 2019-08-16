@@ -75,6 +75,8 @@ refGenes <- as.character(rownames(rnaseqDT))
 cat(paste0("... initial number of rows (genes): ", length(refGenes), "\n"))
 
 # ADDED 16.11.2018 to check using other files
+txt <- paste0("inputDataType\t=\t", inputDataType, "\n")
+printAndLog(txt, pipLogFile)
 txt <- paste0("gene2tadDT_file\t=\t", gene2tadDT_file, "\n")
 printAndLog(txt, pipLogFile)
 txt <- paste0("TADpos_file\t=\t", TADpos_file, "\n")

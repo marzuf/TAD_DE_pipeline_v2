@@ -67,6 +67,16 @@ myWidth <- ifelse(plotType == "png", 600, 10)
 
 fixCutOffSeq <- TRUE
 
+# ADDED 15.08.2019 to check using other files
+txt <- paste0("inputDataType\t=\t", inputDataType, "\n")
+printAndLog(txt, pipLogFile)
+txt <- paste0("gene2tadDT_file\t=\t", gene2tadDT_file, "\n")
+printAndLog(txt, pipLogFile)
+txt <- paste0("TADpos_file\t=\t", TADpos_file, "\n")
+printAndLog(txt, pipLogFile)
+txt <- paste0("settingF\t=\t", settingF, "\n")
+printAndLog(txt, pipLogFile)
+
 #**************************************************************************************************** COMBINED LOG FC AND INTRA TAD CORR
 
 TADpos_DT <- read.delim(TADpos_file, header=F, stringsAsFactors = F, col.names=c("chromo", "region", "start", "end"))

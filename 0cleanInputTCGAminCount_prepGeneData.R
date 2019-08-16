@@ -59,7 +59,7 @@ cat(paste0("> inputDataType: ", inputDataType, "\n"))
 #####################
 
 # create the directories
-curr_outFold <- paste0(pipOutFold, "/", script_name, "_TEMP")
+curr_outFold <- paste0(pipOutFold, "/", script_name)
 system(paste0("mkdir -p ", curr_outFold))
 
 pipLogFile <- paste0(pipOutFold, "/", format(Sys.time(), "%Y%d%m%H%M%S"),"_", script_name, "_logFile.txt")
@@ -91,6 +91,8 @@ stopifnot(is.numeric(min_sampleRatio))
 stopifnot(min_sampleRatio >= 0 & min_sampleRatio <= 1)
 
 # ADDED 16.11.2018 to check using other files
+txt <- paste0("inputDataType\t=\t", inputDataType, "\n")
+printAndLog(txt, pipLogFile)
 txt <- paste0("gene2tadDT_file\t=\t", gene2tadDT_file, "\n")
 printAndLog(txt, pipLogFile)
 txt <- paste0("TADpos_file\t=\t", TADpos_file, "\n")
@@ -336,6 +338,12 @@ upperLimit <- as.numeric(quantile(tadGeneNbr_DT$nbrGenes, probs=maxQuantGeneTAD)
 txt <- paste0(toupper(script_name), "> Current threhsold for TAD size: >= ", minNbrGeneTAD, " and <= ", upperLimit, " (", round(maxQuantGeneTAD*100, 2), "%)\n")
 printAndLog(txt, pipLogFile)
 tadGeneNbr_DT <- tadGeneNbr_DT[tadGeneNbr_DT$nbrGenes >= minNbrGeneTAD & tadGeneNbr_DT$nbrGenes <= upperLimit,]
+
+# ADDED 15.08.2019 to easily retrieve the tad size limits
+outFile <- file.path(curr_outFold, "gene_nbr_filter.Rdata")
+gene_nbr_filter <- c(minNbrGeneTAD, maxQuantGeneTAD)
+save(gene_nbr_filter, file = outFile)
+cat(paste0("... written: ", outFile, "\n"))
 
 rangeTADgenes <- c(minNbrGeneTAD, upperLimit)
 save(rangeTADgenes, file = paste0(curr_outFold, "/", "rangeTADgenes.Rdata"))

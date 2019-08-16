@@ -48,6 +48,8 @@ system(paste0("rm -f ", pipLogFile))
 registerDoMC(ifelse(SSHFS, 2, nCpu)) # from main_settings.R
 
 # ADDED 16.11.2018 to check using other files
+txt <- paste0("inputDataType\t=\t", inputDataType, "\n")
+printAndLog(txt, pipLogFile)
 txt <- paste0("gene2tadDT_file\t=\t", gene2tadDT_file, "\n")
 printAndLog(txt, pipLogFile)
 txt <- paste0("TADpos_file\t=\t", TADpos_file, "\n")

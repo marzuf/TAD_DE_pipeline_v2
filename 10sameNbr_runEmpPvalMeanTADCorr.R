@@ -52,6 +52,8 @@ pipLogFile <- paste0(pipOutFold, "/", format(Sys.time(), "%Y%d%m%H%M%S"),"_", sc
 system(paste0("rm -f ", pipLogFile))
 
 # ADDED 16.11.2018 to check using other files
+txt <- paste0("inputDataType\t=\t", inputDataType, "\n")
+printAndLog(txt, pipLogFile)
 txt <- paste0("gene2tadDT_file\t=\t", gene2tadDT_file, "\n")
 printAndLog(txt, pipLogFile)
 txt <- paste0("TADpos_file\t=\t", TADpos_file, "\n")
@@ -72,6 +74,13 @@ printAndLog(txt, pipLogFile)
 all_sampleCorr_files <- list.files(mainPipFold, pattern="meanCorr_sample_around_TADs_sameNbr.Rdata", full.names = TRUE, recursive = TRUE)
 all_hicds <- list.files(mainPipFold)
 all_exprds <- sapply(all_hicds, function(x) list.files(file.path(mainPipFold, x)))
+
+
+txt <- paste0("sampleCorr_files used (n=", length(all_sampleCorr_files), "):\n")
+printAndLog(txt, pipLogFile)
+txt <- paste0(all_sampleCorr_files, collapse="\n")
+printAndLog(txt, pipLogFile)
+
 
 
 stopifnot(length(all_sampleCorr_files) == length(unlist(all_exprds)))
