@@ -2,6 +2,8 @@
 
 # modified 02.08.2019 -> to accomodate with the 100'000 without need of computing intraTADcorr and 8c script-> do the emp. FDR stuff only for the FC
 
+cat("hello\n")
+
 options(scipen=100)
 
 startTime <- Sys.time()
@@ -26,6 +28,7 @@ setDir <- ifelse(SSHFS, "/media/electron", "")
 source(paste0(setDir, "/mnt/ed4/marie/scripts/RNA_seq_v2_before0405/RNAseq_fct.R"))
 
 pipScriptDir <- paste0(setDir, "/mnt/ed4/marie/scripts/TAD_DE_pipeline_v2")
+
 
 args <- commandArgs(trailingOnly = TRUE)
 stopifnot(length(args) == 1)
@@ -66,6 +69,10 @@ myHeight <- ifelse(plotType == "png", 480, 7)
 myWidth <- ifelse(plotType == "png", 600, 10)
 
 fixCutOffSeq <- TRUE
+
+pipLogFile <- paste0(pipOutFold, "/", format(Sys.time(), "%Y%d%m%H%M%S"),"_", script_name, "_logFile.txt")
+system(paste0("rm -f ", pipLogFile))
+
 
 # ADDED 15.08.2019 to check using other files
 txt <- paste0("inputDataType\t=\t", inputDataType, "\n")

@@ -1,4 +1,12 @@
 
+# LAST UPDATE 16.08.2019 => set.seed in get_ShuffledPositions_vFunct using permut idx to make reproducible !
+# add also the stopifnot to check the foreach assignment
+# besides these 2 changes -> same as TAD_DE_utils_fasterPermut.R_noSeed
+
+### same as _vJune but can pass aggregFun for aggregating the expression values
+
+# UPDATE 16.08.2019 => geneAggregExpression is built only once in the multiShuffled function ! and passed here
+# => aggreg expression, computed only once, RNAdt and aggregFun no need to be passed anymore
 #######################################################################################################################
 #######################################################################################################################
 #######################################################################################################################
@@ -91,7 +99,7 @@ geneAggregExpression <- NULL
         cat(paste0("... NO CLASS - shuffle: ", i, "/", nSimu, "\n"))
       }
     x <- get_ShuffledPositions_vFunct(g2TADdt = g2TADdt,  geneIDlist = geneIDlist,  #  aggregFun=aggregFun, RNAdt = RNAdt, 
-                                         nClass = nClass, TADonly = TADonly, withExprClass = withExprClass, geneAggregExpressionDT = geneAggregExpression ) 
+                                         nClass = nClass, TADonly = TADonly, withExprClass = withExprClass, geneAggregExpressionDT = geneAggregExpression, rd_idx=i ) 
 
 
       stopifnot(all(genes1 == x[,1]))
@@ -107,13 +115,17 @@ geneAggregExpression <- NULL
 #######################################################################################################################
 #######################################################################################################################
 
+# LAST UPDATE 16.08.2019 => set.seed in get_ShuffledPositions_vFunct using permut idx to make reproducible !
+# add also the stopifnot to check the foreach assignment
+# besides these 2 changes -> same as TAD_DE_utils_fasterPermut.R_noSeed
+
 ### same as _vJune but can pass aggregFun for aggregating the expression values
 
 # UPDATE 16.08.2019 => geneAggregExpression is built only once in the multiShuffled function ! and passed here
 # => aggreg expression, computed only once, RNAdt and aggregFun no need to be passed anymore
 
-get_ShuffledPositions_vFunct <- function(g2TADdt, geneIDlist, nClass, TADonly, withExprClass, geneAggregExpressionDT=NULL) { # removed aggregFun and rnaDT
-
+get_ShuffledPositions_vFunct <- function(g2TADdt, geneIDlist, nClass, TADonly, withExprClass, geneAggregExpressionDT=NULL, rd_idx=0) { # removed aggregFun and rnaDT
+set.seed(16082019+rd_idx) # added for reproducibility
 
   warning("geneIDlist argument should correspond to rownames of RNAdt")
   warning("duplicated - ambiguous - are removed !!! ")
@@ -141,6 +153,9 @@ get_ShuffledPositions_vFunct <- function(g2TADdt, geneIDlist, nClass, TADonly, w
     geneAggregExpression <- geneAggregExpressionDT
 
     # now, for each class, reshuffle the TAD -> new column with the reshuffled positions
+
+stopifnot(unique(as.character(geneAggregExpression$class)) == paste0(1:nClass)) # => this is why the foreach assignment works !
+
     geneAggregExpression$shuffRegion <- foreach(i_cl = 1:nClass, .combine='c') %do% {
       subDT <- geneAggregExpression[geneAggregExpression$class == i_cl,]
       initPos <- subDT$initRegion

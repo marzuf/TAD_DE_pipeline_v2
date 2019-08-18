@@ -123,23 +123,17 @@ txt <- paste0("!!! take all the files matching \"meanCorr_sample_around_TADs_sam
 printAndLog(txt, pipLogFile)
 
 all_sampleCorr_files <- list.files(mainPipFold, pattern="meanCorr_sample_around_TADs_sameNbr.Rdata", full.names = TRUE, recursive = TRUE)
+all_sampleCorr_files <- all_sampleCorr_files[grepl(script7sameNbr_name, all_sampleCorr_files)]
 all_hicds <- list.files(mainPipFold)
 all_exprds <- sapply(all_hicds, function(x) list.files(file.path(mainPipFold, x)))
+cat(paste0(all_sampleCorr_files, collapse="\n"))
+cat(paste0(all_exprds, collapse="\n"))
+cat("\n")
+cat(length(all_sampleCorr_files))
+cat("\n")
+cat(length(unlist(all_exprds)))
+cat("\n")
 stopifnot(length(all_sampleCorr_files) == length(unlist(all_exprds)))
-
-
-### RETRIEVE ALL THE FILES IN THE FOLDER !!!
-mainPipFold <- dirname(dirname(pipOutFold))
-txt <- paste0("!!! take all the files matching \"meanCorr_sample_around_TADs_sameNbr.Rdata\" in ", mainPipFold, "\n")
-printAndLog(txt, pipLogFile)
-
-all_sampleCorr_files <- list.files(mainPipFold, pattern="meanCorr_sample_around_TADs_sameNbr.Rdata", full.names = TRUE, recursive = TRUE)
-all_hicds <- list.files(mainPipFold)
-all_exprds <- sapply(all_hicds, function(x) list.files(file.path(mainPipFold, x)))
-
-
-stopifnot(length(all_sampleCorr_files) == length(unlist(all_exprds)))
-
 
 ### PREPARE THE SAMPLE CORR VALUES FROM ALL DATASETS
 corr_file="/media/electron/mnt/etemp/marie/Yuanlong_Cancer_HiC_data_TAD_DA/PIPELINE/OUTPUT_FOLDER/GSE105381_HepG2_40kb/TCGAlihc_norm_lihc/7sameNbr_runPermutationsMeanTADCorr/meanCorr_sample_around_TADs_sameNbr.Rdata"
