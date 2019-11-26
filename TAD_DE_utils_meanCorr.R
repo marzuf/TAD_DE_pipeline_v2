@@ -42,6 +42,74 @@ get_meanCorr_value <- function(exprMatrix, inside_genes, outside_genes, cormet) 
 
 
 #############################################################################################################################
+############################################################################################################################# ADDED 26.11.2019
+#############################################################################################################################
+
+get_meanCorrPartial_value <- function(exprMatrix, inside_genes, outside_genes, purity_vals, cormet, nause) {
+  stopifnot(inside_genes %in% rownames(exprMatrix))
+  stopifnot(outside_genes %in% rownames(exprMatrix))
+  stopifnot(setequal(c(inside_genes, outside_genes), rownames(exprMatrix)))
+  
+  nAllGenes <- length(inside_genes) + length(outside_genes)
+  
+  full_coexprMatrix <- cor(t(exprMatrix), method = cormet)
+  stopifnot(dim(full_coexprMatrix) == nAllGenes)
+  
+  #### CORRELATION ===> change here for partial correlation (26.11.2019)
+  fpkmdt <- exprMatrix
+  stopifnot(colnames(fpkmdt) %in% names(purity_vals))
+  fpkmdt_with_pur <- as.data.frame(fpkmdt)
+  fpkmdt_with_pur["purity",] <- purity_vals[colnames(fpkmdt_with_pur)]
+  stopifnot(rownames(fpkmdt_with_pur)[nrow(fpkmdt_with_pur)] == "purity")
+  
+  
+  
+  # partial correlations for a set (x) of variables with set (y) removed.
+  partialcorr <- as(partial.r(t(fpkmdt_with_pur),
+                              x = 1:(nrow(fpkmdt_with_pur)-1),
+                              y=nrow(fpkmdt_with_pur),
+                              method=cormet,
+                              use=nause), "matrix")
+  
+  
+  stopifnot(isSymmetric(partialcorr))
+  stopifnot(rownames(partialcorr) == rownames(full_coexprMatrix))
+  stopifnot(colnames(partialcorr) == colnames(full_coexprMatrix))
+  
+  
+  coexprMatrix <- partialcorr
+  # => end added here
+    
+  coexprMatrix[lower.tri(coexprMatrix, diag = TRUE)] <- NA   # because after I filter that 1 gene should be inside, and 1 gene should be outside -> can never happen to take the diag. value of coexpression
+  coexprMatrix <- na.omit(melt(coexprMatrix))
+  colnames(coexprMatrix)[1:2] <- c("Var1", "Var2")
+  stopifnot(colnames( coexprMatrix)[3] == "value" )
+  coexprMatrix$Var1 <- as.character(coexprMatrix$Var1)
+  coexprMatrix$Var2 <- as.character(coexprMatrix$Var2)
+  
+  stopifnot(coexprMatrix$Var1 %in% outside_genes | coexprMatrix$Var1 %in% inside_genes)
+  stopifnot(coexprMatrix$Var2 %in% outside_genes | coexprMatrix$Var2 %in% inside_genes)
+  stopifnot(inside_genes %in% coexprMatrix$Var1 | inside_genes %in% coexprMatrix$Var2)
+  stopifnot(outside_genes %in% coexprMatrix$Var1 | outside_genes %in% coexprMatrix$Var2)
+  
+  # take only if one of the two genes outside and the other inside
+  coexprMatrix <- coexprMatrix[!  (coexprMatrix$Var1 %in% outside_genes & coexprMatrix$Var2 %in% outside_genes),]  # do not take correlation between pairs of genes in  the same TAD
+  coexprMatrix <- coexprMatrix[ ! (coexprMatrix$Var1 %in% inside_genes & coexprMatrix$Var2 %in% inside_genes),]  # do not take correlation between pairs of genes in  the same TAD
+  
+  stopifnot(     (coexprMatrix$Var1 %in% outside_genes & coexprMatrix$Var2 %in% inside_genes) | 
+                   (coexprMatrix$Var2 %in% outside_genes & coexprMatrix$Var1 %in% inside_genes) )
+  
+  
+
+  stopifnot(nrow(coexprMatrix) == (length(inside_genes) * length(outside_genes) ))
+  
+  meanCorr_value <- mean(coexprMatrix$value)
+  stopifnot(!is.na(meanCorr_value))
+  return(meanCorr_value)
+}
+
+
+#############################################################################################################################
 ############################################################################################################################# 
 #############################################################################################################################
 

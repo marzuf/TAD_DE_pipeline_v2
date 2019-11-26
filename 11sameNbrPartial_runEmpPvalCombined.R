@@ -10,7 +10,7 @@ startTime <- Sys.time()
 # - script3: all_meanLogFC_TAD.Rdata
 # - script8: all_obs_ratioDown.Rdata
 # - script9: emp_pval_meanLogFC.Rdata
-# - script10sameNbr: emp_pval_meanCorr.Rdata
+# - script10sameNbrPartial: emp_pval_meanCorr.Rdata
 ################################################################################
 
 ################  OUTPUT
@@ -38,8 +38,8 @@ script9_name <- "9_runEmpPvalMeanTADLogFC"
 
 #cat("!!! WARNING: USE 10000 PERMUTATIONS DATA !!!\n")
 
-script10sameNbr_name <- "10sameNbr_runEmpPvalMeanTADCorr"
-script_name <- "11sameNbr_runEmpPvalCombined"
+script10sameNbr_name <- "10sameNbrPartial_runEmpPvalMeanTADCorr"
+script_name <- "11sameNbrPartial_runEmpPvalCombined"
 stopifnot(file.exists(paste0(pipScriptDir, "/", script_name, ".R")))
 cat(paste0("> START ", script_name,  "\n"))
 

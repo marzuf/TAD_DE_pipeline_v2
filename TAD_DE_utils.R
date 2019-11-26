@@ -4,6 +4,34 @@
 # - genome assembly used with biomart: GRCh37
 ##########################
 
+# FLUX: (instead of installing flux package)
+auc <- function (x, y, thresh = NULL, dens = 100, sort.x = TRUE) {
+    x <- x[!is.na(x)]
+    y <- y[!is.na(x)]
+    x <- x[!is.na(y)]
+    y <- y[!is.na(y)]
+    if (sort.x) {
+        ord <- order(x)
+        x <- x[ord]
+        y <- y[ord]
+    }
+    idx = 2:length(x)
+    x <- as.vector(apply(cbind(x[idx - 1], x[idx]), 1, function(x) seq(x[1], 
+        x[2], length.out = dens)))
+    y <- as.vector(apply(cbind(y[idx - 1], y[idx]), 1, function(x) seq(x[1], 
+        x[2], length.out = dens)))
+    if (!is.null(thresh)) {
+        y.0 <- y <= thresh
+        y[y.0] <- thresh
+    }
+    idx = 2:length(x)
+    integral <- as.double((x[idx] - x[idx - 1]) %*% (y[idx] + 
+        y[idx - 1]))/2
+    integral
+}
+
+
+
 
 #######################################################################################################################
 #######################################################################################################################
@@ -1111,7 +1139,7 @@ plot_cumsumDiff05_AUC <- function(observ_vect, permut_DT, pointObsCol = "black",
   def_xpd <- par()$xpd
   on.exit( {par(xpd=def_xpd); par(mar=def_mar)})
   
-  suppressPackageStartupMessages(library(flux, warn.conflicts = FALSE, quietly = TRUE, verbose = FALSE)) # error bar
+  #suppressPackageStartupMessages(library(flux, warn.conflicts = FALSE, quietly = TRUE, verbose = FALSE)) # error bar
   
   
   if(is.null(my_main)) my_main <- paste0(my_stat, ": AUC cumsum departure from ", departureValue)
@@ -1234,7 +1262,7 @@ plot_cumsumDiff05_AUC2 <- function(observ_vect, permut_DT, pointObsCol = "black"
     if(is.null(my_xlab)) my_xlab <- paste0("cumsum(abs(", my_stat, " - ", departureValue,"))")
     if(is.null(my_ylab)) my_ylab <- paste0("density")
   }
-  suppressPackageStartupMessages(library(flux, warn.conflicts = FALSE, quietly = TRUE, verbose = FALSE)) # error bar
+  #suppressPackageStartupMessages(library(flux, warn.conflicts = FALSE, quietly = TRUE, verbose = FALSE)) # error bar
   
   observ_vect <- sort(observ_vect, decreasing = T)
   permut_DT <- apply(permut_DT, 2, sort, decreasing=T)
@@ -1330,7 +1358,7 @@ plot_cumsumDiff05_AUC2_list <- function(observ_vect_cumsum, permut_List_cumsum, 
     if(is.null(my_xlab)) my_xlab <- paste0("cumsum(abs(", my_stat, " - ", departureValue,"))")
     if(is.null(my_ylab)) my_ylab <- paste0("density")
   }
-  suppressPackageStartupMessages(library(flux, warn.conflicts = FALSE, quietly = TRUE, verbose = FALSE)) # error bar
+  #suppressPackageStartupMessages(library(flux, warn.conflicts = FALSE, quietly = TRUE, verbose = FALSE)) # error bar
   
   cat(".... compute observed AUC \n")
   x_val <- c(1:length(observ_vect_cumsum))
@@ -1406,7 +1434,7 @@ plot_cumsumDiff05_logAUC <- function(observ_vect, permut_DT, pointObsCol = "blac
   def_xpd <- par()$xpd
   on.exit( {par(xpd=def_xpd); par(mar=def_mar)})
   
-  suppressPackageStartupMessages(library(flux, warn.conflicts = FALSE, quietly = TRUE, verbose = FALSE)) # error bar
+  #suppressPackageStartupMessages(library(flux, warn.conflicts = FALSE, quietly = TRUE, verbose = FALSE)) # error bar
   
   
   if(is.null(my_main)) my_main <- paste0(my_stat, ": log10AUC cumsum departure from ", departureValue)
@@ -2285,7 +2313,7 @@ calc_aucObsPerm_cumsum <- function(observ_vect, permut_DT, thresh_perm =0.95,
                      doPlot=T,
                      plotDeviation = FALSE){
 
-  suppressPackageStartupMessages(library(flux, warn.conflicts = FALSE, quietly = TRUE, verbose = FALSE))  
+  #suppressPackageStartupMessages(library(flux, warn.conflicts = FALSE, quietly = TRUE, verbose = FALSE))  
 
   if(is.null(my_stat)) {
     main_prefix <- ""
@@ -2406,7 +2434,7 @@ calc_aucObsPerm_cumsum_list <- function(observ_vect, shuff_List,
                      doPlot=TRUE,
                      plotDeviation = FALSE ){
 
-  suppressPackageStartupMessages(library(flux, warn.conflicts = FALSE, quietly = TRUE, verbose = FALSE))  
+  #suppressPackageStartupMessages(library(flux, warn.conflicts = FALSE, quietly = TRUE, verbose = FALSE))  
 
   if(is.null(my_stat)) {
     main_prefix <- ""
@@ -2570,7 +2598,7 @@ calc_aucObsPerm_cumsum_list_v2 <- function(observ_vect, shuff_List,
                      doPlot=TRUE,
                      plotDeviation = FALSE ){
 
-  suppressPackageStartupMessages(library(flux, warn.conflicts = FALSE, quietly = TRUE, verbose = FALSE))  
+  #suppressPackageStartupMessages(library(flux, warn.conflicts = FALSE, quietly = TRUE, verbose = FALSE))  
 
   if(is.null(my_stat)) {
     main_prefix <- ""
