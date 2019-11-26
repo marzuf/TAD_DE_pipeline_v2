@@ -72,6 +72,9 @@ txt <- paste0("!!! take all the files matching \"meanCorr_sample_around_TADs_sam
 printAndLog(txt, pipLogFile)
 
 all_sampleCorr_files <- list.files(mainPipFold, pattern="meanCorr_sample_around_TADs_sameNbr.Rdata", full.names = TRUE, recursive = TRUE)
+
+all_sampleCorr_files <- all_sampleCorr_files[grepl(script7sameNbr_name, all_sampleCorr_files)]
+
 all_hicds <- list.files(mainPipFold)
 all_exprds <- sapply(all_hicds, function(x) list.files(file.path(mainPipFold, x)))
 
