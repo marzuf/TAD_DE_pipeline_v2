@@ -26,8 +26,8 @@ pipScriptDir <- paste0(setDir, "/mnt/ed4/marie/scripts/TAD_DE_pipeline_v2")
 script0_name <- "0_prepGeneData"
 script1_name <- "1_runGeneDE"
 script4_name <- "4_runMeanTADCorr"
-script7sameNbr_name <- "7sameNbr_runPermutationsMeanTADCorr"
-script_name <- "10sameNbr_runEmpPvalMeanTADCorr"
+script7sameNbr_name <- "7sameNbrSpearman_runPermutationsMeanTADCorr"
+script_name <- "10sameNbrSpearman_runEmpPvalMeanTADCorr"
 stopifnot(file.exists(paste0(pipScriptDir, "/", script_name, ".R")))
 cat(paste0("> START ", script_name,  "\n"))
 

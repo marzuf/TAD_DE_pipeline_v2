@@ -26,8 +26,7 @@ pipScriptDir <- paste0(setDir, "/mnt/ed4/marie/scripts/TAD_DE_pipeline_v2")
 script0_name <- "0_prepGeneData"
 script1_name <- "1_runGeneDE"
 script4_name <- "4_runMeanTADCorr"
-script7sameNbr_name <- "7sameNbr_runPermutationsMeanTADCorr"
-script_name <- "10sameNbr_runEmpPvalMeanTADCorr"
+script_name <- "10random_runEmpPvalMeanTADCorr"
 stopifnot(file.exists(paste0(pipScriptDir, "/", script_name, ".R")))
 cat(paste0("> START ", script_name,  "\n"))
 
@@ -51,6 +50,11 @@ system(paste0("mkdir -p ", curr_outFold))
 pipLogFile <- paste0(pipOutFold, "/", format(Sys.time(), "%Y%d%m%H%M%S"),"_", script_name, "_logFile.txt")
 system(paste0("rm -f ", pipLogFile))
 
+randomPattern <- "RANDOMMIDPOSSTRICT"
+txt <- paste0("taking sample correlation for corr_type\t=\t", settingF, "\n")
+printAndLog(txt, pipLogFile)
+
+
 # ADDED 16.11.2018 to check using other files
 txt <- paste0("inputDataType\t=\t", inputDataType, "\n")
 printAndLog(txt, pipLogFile)
@@ -60,21 +64,17 @@ txt <- paste0("TADpos_file\t=\t", TADpos_file, "\n")
 printAndLog(txt, pipLogFile)
 txt <- paste0("settingF\t=\t", settingF, "\n")
 printAndLog(txt, pipLogFile)
-
-
-corr_type <- "meanCorr"
-txt <- paste0("taking sample correlation for corr_type\t=\t", settingF, "\n")
+txt <- paste0("randomPattern\t=\t", randomPattern, "\n")
 printAndLog(txt, pipLogFile)
+
 
 ### RETRIEVE ALL THE FILES IN THE FOLDER !!!
 mainPipFold <- dirname(dirname(pipOutFold))
-txt <- paste0("!!! take all the files matching \"meanCorr_sample_around_TADs_sameNbr.Rdata\" in ", mainPipFold, "\n")
+txt <- paste0("!!! take all the files matching \"all_meanCorr_TAD.Rdata\" in ", mainPipFold, "\n")
 printAndLog(txt, pipLogFile)
 
-all_sampleCorr_files <- list.files(mainPipFold, pattern="meanCorr_sample_around_TADs_sameNbr.Rdata", full.names = TRUE, recursive = TRUE)
-
-all_sampleCorr_files <- all_sampleCorr_files[grepl(script7sameNbr_name, all_sampleCorr_files)]  ### added 26.11.2019 otherwise match also the files for partial corr.
-all_sampleCorr_files <- all_sampleCorr_files[!grepl("RANDOM", all_sampleCorr_files) & !grepl("PERMUT", all_sampleCorr_files)]
+all_sampleCorr_files <- list.files(mainPipFold, pattern="all_meanCorr_TAD.Rdata", full.names = TRUE, recursive = TRUE)
+all_sampleCorr_files <- all_sampleCorr_files[grepl(randomPattern, all_sampleCorr_files) & grepl(script4_name, all_sampleCorr_files)]  
 
 all_hicds <- list.files(mainPipFold)
 all_hicds <- all_hicds[!grepl("RANDOM", all_hicds) & !grepl("PERMUT", all_hicds)]
@@ -93,13 +93,12 @@ stopifnot(length(all_sampleCorr_files) == length(unlist(all_exprds)))
 
 
 ### PREPARE THE SAMPLE CORR VALUES FROM ALL DATASETS
-corr_file="/media/electron/mnt/etemp/marie/Yuanlong_Cancer_HiC_data_TAD_DA/PIPELINE/OUTPUT_FOLDER/GSE105381_HepG2_40kb/TCGAlihc_norm_lihc/7sameNbr_runPermutationsMeanTADCorr/meanCorr_sample_around_TADs_sameNbr.Rdata"
 all_sample_corrValues <- foreach(corr_file = all_sampleCorr_files, .combine='c') %dopar% {
   stopifnot(file.exists(corr_file))
   corr_data <- eval(parse(text = load(corr_file)))
-  all_samp_corrs <- as.numeric(sapply(corr_data, function(x) x[[paste0(corr_type)]]))
+  all_samp_corrs <- as.numeric(corr_data)
   stopifnot(!is.null(all_samp_corrs))
-  all_samp_corrs <- na.omit(all_samp_corrs)  
+  stopifnot(!is.na(all_samp_corrs))
   all_samp_corrs
 }
 

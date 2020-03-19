@@ -124,7 +124,9 @@ printAndLog(txt, pipLogFile)
 
 all_sampleCorr_files <- list.files(mainPipFold, pattern="meanCorr_sample_around_TADs_sameNbr.Rdata", full.names = TRUE, recursive = TRUE)
 all_sampleCorr_files <- all_sampleCorr_files[grepl(script7sameNbr_name, all_sampleCorr_files)]
+all_sampleCorr_files <- all_sampleCorr_files[!grepl("RANDOM", all_sampleCorr_files) & !grepl("PERMUT", all_sampleCorr_files)]
 all_hicds <- list.files(mainPipFold)
+all_hicds <- all_hicds[!grepl("RANDOM", all_hicds) & !grepl("PERMUT", all_hicds)]
 all_exprds <- sapply(all_hicds, function(x) list.files(file.path(mainPipFold, x)))
 cat(paste0(all_sampleCorr_files, collapse="\n"))
 cat(paste0(all_exprds, collapse="\n"))
