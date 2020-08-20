@@ -55,7 +55,7 @@ system(paste0("mkdir -p ", curr_outFold))
 pipLogFile <- paste0(pipOutFold, "/", format(Sys.time(), "%Y%d%m%H%M%S"),"_", script_name, "_logFile.txt")
 system(paste0("rm -f ", pipLogFile))
 
-twoTailsStouffer <- FALSE
+twoTailsStouffer <- FALSE # discussion with Marco -> do it one-sided (compared two- and one- -> similar)
 # stouffer(c(emp_pval_intraCorr[x], emp_pval_logFC[x]), two.tails = twoTailsStouffer)))
 
 # ADDED 16.11.2018 to check using other files
